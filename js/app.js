@@ -265,8 +265,13 @@ function renderPanel(key) {
   renderScale("#sleep-scale", SLEEP_LABELS, journal.sleep, "sleep");
 
   const studyInput = $("#study-minutes-input");
+  const studyHint  = $("#study-minutes-hint");
   if (studyInput) {
     studyInput.value = journal.studyMinutes != null ? journal.studyMinutes : "";
+  }
+  if (studyHint) {
+    const m = journal.studyMinutes;
+    studyHint.textContent = m > 0 ? (m >= 60 ? `≈ ${(m/60).toFixed(1)} 小时` : "") : "";
   }
 }
 
@@ -820,7 +825,10 @@ function bindEvents() {
   $(".panel-body").addEventListener("input", (e) => {
     if (e.target.id !== "study-minutes-input") return;
     const val = parseInt(e.target.value, 10);
-    updateJournalField({ studyMinutes: isNaN(val) || val < 0 ? null : val });
+    const minutes = isNaN(val) || val < 0 ? null : val;
+    updateJournalField({ studyMinutes: minutes });
+    const hint = $("#study-minutes-hint");
+    if (hint) hint.textContent = minutes > 0 && minutes >= 60 ? `≈ ${(minutes/60).toFixed(1)} 小时` : "";
   });
 
   $("#note-style-picker").addEventListener("click", (e) => {

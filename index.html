@@ -121,12 +121,16 @@
                 <span class="scale-label">睡眠</span>
                 <div class="scale" id="sleep-scale" data-field="sleep"></div>
               </div>
-              <div class="scale-group study-minutes-group">
-                <span class="scale-label">学习时长</span>
-                <div class="study-minutes-input-row">
-                  <input type="number" id="study-minutes-input" min="0" max="1440" placeholder="0" />
-                  <span class="study-minutes-unit">分钟</span>
-                </div>
+            </section>
+
+            <section class="panel-section">
+              <div class="section-head">
+                <h4>⏱ 今日学习时长</h4>
+              </div>
+              <div class="study-minutes-row">
+                <input type="number" id="study-minutes-input" min="0" max="1440" placeholder="0" />
+                <span class="study-minutes-unit">分钟</span>
+                <span class="study-minutes-hint" id="study-minutes-hint"></span>
               </div>
             </section>
 

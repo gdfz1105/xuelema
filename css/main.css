@@ -1109,3 +1109,107 @@ body::after {
   color: #3a5068;
   border-color: #a0b8cc;
 }
+
+/* ── 学习时长独立板块输入 ── */
+.study-minutes-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.study-minutes-row input[type="number"] {
+  width: 90px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  font-family: var(--font);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.study-minutes-row input[type="number"]:focus {
+  border-color: var(--accent);
+}
+.study-minutes-hint {
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+/* ── 关联分析区域 ── */
+.stats-corr-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 0;
+}
+@media (max-width: 700px) {
+  .stats-corr-row { grid-template-columns: 1fr; }
+}
+
+.corr-card, .guidance-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+
+.corr-disclaimer {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.corr-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.corr-row:last-child { border-bottom: none; }
+
+.corr-emoji {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+  padding-top: 1px;
+}
+.corr-body { flex: 1; min-width: 0; }
+.corr-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.corr-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.corr-result {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.8rem;
+}
+
+/* ── 个性化建议卡 ── */
+.guidance-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.guidance-item:last-child { border-bottom: none; }
+.guidance-icon { font-size: 1.1rem; flex-shrink: 0; }
+.guidance-text {
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.6;
+  margin: 0;
+}
