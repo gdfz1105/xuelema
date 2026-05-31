@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>今天学了吗？ · 学术轻量日程</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=LXGW+WenKai&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600&family=Nunito:wght@400;600;700&family=Zen+Maru+Gothic:wght@400;500;700&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/extras.css" />
+  </head>
+  <body>
+    <div class="app" id="app-root">
+      <!-- 贴纸层在 .app 内部，随页面滚动 -->
+      <div class="decor-layer" id="decor-layer" aria-hidden="true"></div>
+
+      <header class="header">
+        <div class="brand">
+          <div class="brand-deco" aria-hidden="true">
+            <span class="deco-star s1">✦</span>
+            <span class="deco-star s2">✧</span>
+            <span class="deco-star s3">⋆</span>
+          </div>
+          <h1>今天学了吗？</h1>
+          <p class="tagline">学术轻量日程 · 每一步都算数哦！</p>
+        </div>
+        <div class="header-controls">
+          <button type="button" class="icon-btn theme-btn" id="open-theme-btn" title="主题与装饰">
+            🎨
+          </button>
+          <div class="view-toggle" role="tablist">
+            <button type="button" class="view-btn active" data-view="week" role="tab">周视图</button>
+            <button type="button" class="view-btn" data-view="month" role="tab">月视图</button>
+            <button type="button" class="view-btn" data-view="stats" role="tab">📊 统计</button>
+          </div>
+          <div class="nav">
+            <button type="button" class="icon-btn" id="nav-prev" aria-label="上一页">‹</button>
+            <button type="button" class="today-btn" id="nav-today">今天</button>
+            <button type="button" class="icon-btn" id="nav-next" aria-label="下一页">›</button>
+          </div>
+          <h2 class="period-label" id="period-label"></h2>
+        </div>
+      </header>
+
+      <main class="main">
+        <p class="calendar-hint hidden" id="calendar-hint">点击日历中的日期，查看任务与笔记</p>
+        <div id="stats-container" style="display:none;width:100%;grid-column:1/-1;"></div>
+        <section class="calendar" id="calendar" aria-label="日历"></section>
+        <aside class="detail-panel hidden" id="detail-panel" aria-label="日期详情">
+          <div class="panel-header">
+            <div>
+              <p class="panel-weekday" id="panel-weekday"></p>
+              <h3 class="panel-date" id="panel-date"></h3>
+            </div>
+            <button type="button" class="icon-btn panel-close" id="panel-close" aria-label="关闭">×</button>
+          </div>
+
+          <div class="panel-body">
+            <section class="panel-section">
+              <div class="section-head">
+                <h4>今日任务块</h4>
+                <button type="button" class="text-btn" id="add-task-btn">+ 添加</button>
+              </div>
+              <ul class="task-list" id="task-list"></ul>
+              <p class="empty-hint hidden" id="task-empty">暂无任务，点击「添加」规划今天</p>
+            </section>
+
+            <section class="panel-section metrics">
+              <h4>完成情况</h4>
+              <div class="completion-bar">
+                <div class="completion-fill" id="completion-fill"></div>
+              </div>
+              <p class="completion-text" id="completion-text"></p>
+            </section>
+
+            <section class="panel-section">
+              <div class="section-head">
+                <h4>文献阅读</h4>
+                <button type="button" class="text-btn" id="add-paper-btn">+ 添加文献</button>
+              </div>
+              <ul class="paper-list" id="paper-list"></ul>
+              <p class="empty-hint hidden" id="paper-empty">每篇文献单独记笔记，点击添加</p>
+            </section>
+
+            <section class="panel-section">
+              <div class="section-head">
+                <h4>小记一笔</h4>
+                <div class="export-btns">
+                  <button type="button" class="text-btn small" id="export-reflection-btn">导出小记…</button>
+                </div>
+              </div>
+              <div class="reflection-cards">
+                <button type="button" class="note-card" id="open-accomplished">
+                  <span class="note-card-icon">🌱</span>
+                  <span class="note-card-label">小收获</span>
+                  <span class="note-card-preview" id="preview-accomplished">点击写写今天的小开心…</span>
+                </button>
+                <button type="button" class="note-card" id="open-unfinished">
+                  <span class="note-card-icon">🫠</span>
+                  <span class="note-card-label">小问题</span>
+                  <span class="note-card-preview" id="preview-unfinished">卡壳的、没做完的…</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="panel-section">
+              <h4>今日状态</h4>
+              <div class="scale-group">
+                <span class="scale-label">情绪</span>
+                <div class="scale" id="mood-scale" data-field="mood"></div>
+              </div>
+              <div class="scale-group">
+                <span class="scale-label">精力</span>
+                <div class="scale" id="energy-scale" data-field="energy"></div>
+              </div>
+              <div class="scale-group">
+                <span class="scale-label">睡眠</span>
+                <div class="scale" id="sleep-scale" data-field="sleep"></div>
+              </div>
+              <div class="scale-group study-minutes-group">
+                <span class="scale-label">学习时长</span>
+                <div class="study-minutes-input-row">
+                  <input type="number" id="study-minutes-input" min="0" max="1440" placeholder="0" />
+                  <span class="study-minutes-unit">分钟</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel-section export-section">
+              <h4>导出记录</h4>
+              <p class="export-hint">可选 Markdown / PDF / 图片</p>
+              <div class="export-row">
+                <button type="button" class="btn primary small" id="open-export-btn">选择导出…</button>
+              </div>
+            </section>
+          </div>
+        </aside>
+      </main>
+
+      <div class="legend">
+        <span class="legend-title">任务类型</span>
+        <ul class="legend-list" id="legend-list"></ul>
+      </div>
+
+      <!-- 底部鼓励横幅 -->
+      <div class="bottom-banner" aria-hidden="true">
+        <span class="banner-quote" id="daily-quote"></span>
+        <span class="banner-deco">✦ ✧ ⋆</span>
+      </div>
+    </div>
+
+    <!-- 主题与装饰 -->
+    <dialog class="theme-dialog" id="theme-dialog">
+      <div class="dialog-inner">
+        <div class="dialog-head">
+          <h3>个性装扮</h3>
+          <button type="button" class="icon-btn" id="theme-close">×</button>
+        </div>
+        <p class="dialog-desc">背景色 · 字体 · 手账贴纸，打造你的可爱日程</p>
+        <div class="font-section">
+          <div class="theme-group-label">字体风格</div>
+          <div class="font-swatches" id="font-picker"></div>
+        </div>
+        <div class="theme-group-label" style="margin-bottom:0.35rem">背景主题</div>
+        <div class="theme-groups" id="theme-picker"></div>
+        <div class="sticker-section">
+          <div class="section-head">
+            <h4>手账贴纸</h4>
+            <label class="toggle-label">
+              <input type="checkbox" id="sticker-mode" />
+              贴纸模式（开启后点击页面空白处粘贴）
+            </label>
+          </div>
+          <div class="sticker-palette" id="decor-palette"></div>
+          <button type="button" class="text-btn" id="clear-decor">清除全部贴纸</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- 任务 -->
+    <dialog class="task-dialog" id="task-dialog">
+      <form id="task-form" method="dialog">
+        <h3 id="task-dialog-title">添加任务</h3>
+        <label class="field-block">
+          <span>标题</span>
+          <input type="text" id="task-title" required maxlength="80" placeholder="例如：博士资格考试复习" />
+        </label>
+        <label class="field-block">
+          <span>类型</span>
+          <div class="category-picker" id="category-picker"></div>
+        </label>
+        <label class="field-block">
+          <span>外形</span>
+          <div class="shape-picker" id="shape-picker"></div>
+        </label>
+        <label class="field-block">
+          <span>时间段（可选）</span>
+          <div class="time-row">
+            <input type="time" id="task-start" />
+            <span>至</span>
+            <input type="time" id="task-end" />
+          </div>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="btn secondary" id="task-cancel">取消</button>
+          <button type="submit" class="btn primary">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- 富文本笔记 -->
+    <dialog class="note-dialog" id="note-dialog">
+      <div class="note-dialog-inner">
+        <div class="note-dialog-head">
+          <h3 id="note-dialog-title">笔记</h3>
+          <button type="button" class="icon-btn" id="note-close">×</button>
+        </div>
+        <div class="note-meta-row hidden" id="paper-meta-row">
+          <label>
+            <span>文献标题</span>
+            <input type="text" id="note-paper-title" maxlength="120" placeholder="论文标题或简称" />
+          </label>
+          <label>
+            <span>阅读分钟</span>
+            <input type="number" id="note-paper-minutes" min="0" max="999" value="0" />
+          </label>
+        </div>
+        <div class="style-picker" id="note-style-picker"></div>
+        <div class="note-scrapbook" id="note-scrapbook">
+          <div class="note-zone note-zone-top" data-zone="top">
+            <span class="zone-hint">↑ 把贴纸拖到这里（文字上方）</span>
+          </div>
+          <div class="note-zone-row">
+            <div class="note-zone note-zone-side" data-zone="left">
+              <span class="zone-hint vertical">左</span>
+            </div>
+            <div class="note-text-area">
+              <div class="note-paper" id="note-paper">
+                <div class="note-canvas-decor" id="note-canvas-decor"></div>
+                <textarea id="note-content" class="note-content" rows="10" placeholder="在这里写字…贴纸请贴在四周空白处"></textarea>
+              </div>
+            </div>
+            <div class="note-zone note-zone-side" data-zone="right">
+              <span class="zone-hint vertical">右</span>
+            </div>
+          </div>
+          <div class="note-zone note-zone-bottom" data-zone="bottom">
+            <span class="zone-hint">↓ 文字下方页边</span>
+          </div>
+        </div>
+        <div class="sticker-section compact">
+          <span class="scale-label">手账贴纸 · 拖到页边空白处</span>
+          <div class="sticker-palette note-sticker-palette" id="note-sticker-palette"></div>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn secondary" id="note-cancel">取消</button>
+          <button type="button" class="btn primary" id="note-save">保存笔记</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- 导出 -->
+    <dialog class="export-dialog" id="export-dialog">
+      <div class="dialog-inner">
+        <div class="dialog-head">
+          <h3>导出记录</h3>
+          <button type="button" class="icon-btn" id="export-close">×</button>
+        </div>
+        <p class="dialog-desc" id="export-date-label"></p>
+        <label class="field-block">
+          <span>导出内容</span>
+          <select id="export-scope">
+            <option value="day">整日日记（任务 + 文献 + 小记）</option>
+            <option value="lit">仅文献笔记</option>
+            <option value="reflection">仅小记（小收获 / 小问题）</option>
+          </select>
+        </label>
+        <label class="field-block">
+          <span>文件格式</span>
+          <select id="export-format">
+            <option value="pdf">PDF（推荐，适合打印分享）</option>
+            <option value="png">图片 PNG（适合发朋友圈）</option>
+            <option value="md">Markdown（适合 Obsidian 等）</option>
+          </select>
+        </label>
+        <p class="export-note" id="export-status"></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn secondary" id="export-cancel">取消</button>
+          <button type="button" class="btn primary" id="export-confirm">开始导出</button>
+        </div>
+      </div>
+    </dialog>
+
+    <button type="button" class="reopen-panel-btn hidden" id="reopen-panel-btn" aria-label="打开日期详情">
+      <span class="reopen-icon">📋</span>
+      <span id="reopen-panel-label">查看这天</span>
+    </button>
+
+    <div class="sticker-mode-banner hidden" id="sticker-mode-banner" role="status">
+      <span>✂️ 手账贴纸模式 — 点击页面空白处粘贴</span>
+      <button type="button" class="banner-btn" id="sticker-mode-off">贴好了</button>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
