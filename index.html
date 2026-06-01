@@ -78,21 +78,7 @@
             </section>
 
             <section class="panel-section">
-              <div class="section-head">
-                <h4>文献阅读</h4>
-                <button type="button" class="text-btn" id="add-paper-btn">+ 添加文献</button>
-              </div>
-              <ul class="paper-list" id="paper-list"></ul>
-              <p class="empty-hint hidden" id="paper-empty">每篇文献单独记笔记，点击添加</p>
-            </section>
-
-            <section class="panel-section">
-              <div class="section-head">
-                <h4>小记一笔</h4>
-                <div class="export-btns">
-                  <button type="button" class="text-btn small" id="export-reflection-btn">导出小记…</button>
-                </div>
-              </div>
+              <h4>小记一笔</h4>
               <div class="reflection-cards">
                 <button type="button" class="note-card" id="open-accomplished">
                   <span class="note-card-icon">🌱</span>
@@ -104,6 +90,10 @@
                   <span class="note-card-label">小问题</span>
                   <span class="note-card-preview" id="preview-unfinished">卡壳的、没做完的…</span>
                 </button>
+              </div>
+              <div class="summary-row">
+                <span class="summary-label">✏️ 一句总结</span>
+                <input type="text" id="summary-input" maxlength="80" placeholder="今天一句话记下来…" />
               </div>
             </section>
 
@@ -124,21 +114,32 @@
             </section>
 
             <section class="panel-section">
-              <div class="section-head">
-                <h4>⏱ 今日学习时长</h4>
+              <h4>⏱ 今日学习时长</h4>
+              <div class="study-slots">
+                <div class="study-slot">
+                  <span class="study-slot-label">🌅 上午</span>
+                  <input type="number" id="study-morning" class="study-slot-input" min="0" max="12" step="0.5" placeholder="0" />
+                  <span class="study-slot-unit">h</span>
+                </div>
+                <div class="study-slot">
+                  <span class="study-slot-label">☀️ 下午</span>
+                  <input type="number" id="study-afternoon" class="study-slot-input" min="0" max="12" step="0.5" placeholder="0" />
+                  <span class="study-slot-unit">h</span>
+                </div>
+                <div class="study-slot">
+                  <span class="study-slot-label">🌙 晚上</span>
+                  <input type="number" id="study-evening" class="study-slot-input" min="0" max="12" step="0.5" placeholder="0" />
+                  <span class="study-slot-unit">h</span>
+                </div>
               </div>
-              <div class="study-minutes-row">
-                <input type="number" id="study-minutes-input" min="0" max="1440" placeholder="0" />
-                <span class="study-minutes-unit">分钟</span>
-                <span class="study-minutes-hint" id="study-minutes-hint"></span>
-              </div>
+              <p class="study-total-hint" id="study-total-hint"></p>
             </section>
 
-            <section class="panel-section export-section">
-              <h4>导出记录</h4>
-              <p class="export-hint">可选 Markdown / PDF / 图片</p>
+            <section class="panel-section">
+              <h4>📖 日记本</h4>
+              <p class="export-hint">预览今日版式 · 可导出 PDF / 图片</p>
               <div class="export-row">
-                <button type="button" class="btn primary small" id="open-export-btn">选择导出…</button>
+                <button type="button" class="btn primary small" id="open-diary-btn">预览日记…</button>
               </div>
             </section>
           </div>

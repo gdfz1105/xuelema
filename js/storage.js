@@ -10,11 +10,13 @@ export const defaultJournal = () => ({
   mood: null,
   energy: null,
   sleep: null,
-  studyMinutes: null,
-  papers: [],
+  studyMorning: null,   // 上午学习时长（小时，可含小数）
+  studyAfternoon: null, // 下午
+  studyEvening: null,   // 晚上
   reflection: {
     accomplished: defaultReflectionPart(),
     unfinished: defaultReflectionPart(),
+    summary: "",  // 一句话总结
   },
 });
 
@@ -41,63 +43,21 @@ const defaultState = () => ({
 });
 
 function migrateJournal(raw) {
-  if (raw?.papers && Array.isArray(raw.papers)) {
-    return {
-      mood: raw.mood ?? null,
-      energy: raw.energy ?? null,
-      sleep: raw.sleep ?? null,
-      studyMinutes: raw.studyMinutes ?? null,
-      papers: raw.papers.map((p) => ({
-        id: p.id || crypto.randomUUID(),
-        title: p.title || "",
-        minutes: p.minutes ?? 0,
-        ...normalizeNotePart(p),
-      })),
-      reflection: normalizeReflection(raw.reflection),
-    };
-  }
+  // 把旧 studyMinutes 转换为 studyEvening（兜底）
+  const studyMorning   = raw?.studyMorning   ?? null;
+  const studyAfternoon = raw?.studyAfternoon ?? null;
+  const studyEvening   = raw?.studyEvening
+    ?? (raw?.studyMinutes != null ? parseFloat((raw.studyMinutes / 60).toFixed(1)) : null);
 
-  const papers = [];
-  const lit = raw?.literature;
-  if (lit?.notes?.trim()) {
-    papers.push({
-      id: crypto.randomUUID(),
-      title: "往期汇总笔记",
-      minutes: lit.minutes ?? 0,
-      content: lit.notes,
-      style: "minimal",
-      placedStickers: [],
-    });
-  } else {
-    const count = lit?.papers ?? 0;
-    for (let i = 0; i < count; i++) {
-      papers.push({
-        id: crypto.randomUUID(),
-        title: `文献 ${i + 1}`,
-        minutes: i === 0 ? lit?.minutes ?? 0 : 0,
-        content: "",
-        style: "minimal",
-        placedStickers: [],
-      });
-    }
-  }
-
-  let reflection = defaultJournal().reflection;
-  if (typeof raw?.reflection === "string" && raw.reflection.trim()) {
-    reflection = {
-      ...reflection,
-      accomplished: { ...defaultReflectionPart(), content: raw.reflection },
-    };
-  } else if (raw?.reflection && typeof raw.reflection === "object") {
-    reflection = normalizeReflection(raw.reflection);
-  }
+  const reflection = normalizeReflection(raw?.reflection);
 
   return {
     mood: raw?.mood ?? null,
     energy: raw?.energy ?? null,
     sleep: raw?.sleep ?? null,
-    studyMinutes: raw?.studyMinutes ?? null,
-    papers,
+    studyMorning,
+    studyAfternoon,
+    studyEvening,
     reflection,
   };
 }
@@ -105,9 +65,14 @@ function migrateJournal(raw) {
 function normalizeReflection(r) {
   const base = defaultJournal().reflection;
   if (!r || typeof r !== "object") return base;
+  // 兼容旧版 string reflection
+  if (typeof r === "string") {
+    return { ...base, accomplished: { ...defaultReflectionPart(), content: r } };
+  }
   return {
     accomplished: normalizeNotePart(r.accomplished),
-    unfinished: normalizeNotePart(r.unfinished),
+    unfinished:   normalizeNotePart(r.unfinished),
+    summary:      typeof r.summary === "string" ? r.summary : "",
   };
 }
 
@@ -123,27 +88,19 @@ function migrateFromV1() {
       });
     }
     return {
-      tasks: (parsed.tasks || []).map((t) => ({
-        ...t,
-        shapeId: t.shapeId || "rounded",
-      })),
+      tasks: (parsed.tasks || []).map((t) => ({ ...t, shapeId: t.shapeId || "rounded" })),
       journals,
       settings: defaultSettings(),
     };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export function loadState() {
   try {
-    let raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       const migrated = migrateFromV1();
-      if (migrated) {
-        saveState(migrated);
-        return migrated;
-      }
+      if (migrated) { saveState(migrated); return migrated; }
       return defaultState();
     }
     const parsed = JSON.parse(raw);
@@ -160,9 +117,7 @@ export function loadState() {
       journals,
       settings: { ...defaultSettings(), ...(parsed.settings || {}) },
     };
-  } catch {
-    return defaultState();
-  }
+  } catch { return defaultState(); }
 }
 
 export function saveState(state) {
@@ -190,10 +145,11 @@ export function getTasksForDate(state, key) {
   return state.tasks.filter((t) => t.date === key);
 }
 
-export function hasLiterature(journal) {
-  return (journal.papers || []).some(
-    (p) => p.title?.trim() || p.content?.trim() || (p.minutes && p.minutes > 0)
-  );
+/** 总学习时长（小时） */
+export function totalStudyHours(journal) {
+  return (journal.studyMorning || 0)
+       + (journal.studyAfternoon || 0)
+       + (journal.studyEvening || 0);
 }
 
 export function hasReflection(journal) {
@@ -202,6 +158,7 @@ export function hasReflection(journal) {
   return (
     r?.accomplished?.content?.trim() ||
     r?.unfinished?.content?.trim() ||
+    r?.summary?.trim() ||
     hasStickers(r?.accomplished) ||
     hasStickers(r?.unfinished)
   );

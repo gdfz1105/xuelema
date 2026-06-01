@@ -250,7 +250,6 @@ function renderPanel(key) {
     total === 0 ? "今日尚无任务" : `已完成 ${done} / ${total} 项（${pct}%）`;
 
   const journal = getJournal(state, key);
-  renderPapersList(journal);
   $("#preview-accomplished").textContent = previewText(
     journal.reflection.accomplished.content,
     "点击写写今天的小开心…"
@@ -264,50 +263,30 @@ function renderPanel(key) {
   renderScale("#energy-scale", ENERGY_LABELS, journal.energy, "energy");
   renderScale("#sleep-scale", SLEEP_LABELS, journal.sleep, "sleep");
 
-  const studyInput = $("#study-minutes-input");
-  const studyHint  = $("#study-minutes-hint");
-  if (studyInput) {
-    studyInput.value = journal.studyMinutes != null ? journal.studyMinutes : "";
-  }
-  if (studyHint) {
-    const m = journal.studyMinutes;
-    studyHint.textContent = m > 0 ? (m >= 60 ? `≈ ${(m/60).toFixed(1)} 小时` : "") : "";
-  }
+  // 学习时长三段
+  const slots = [
+    { id: "study-morning",   field: "studyMorning"   },
+    { id: "study-afternoon", field: "studyAfternoon" },
+    { id: "study-evening",   field: "studyEvening"   },
+  ];
+  slots.forEach(({ id, field }) => {
+    const el = $(`#${id}`);
+    if (el) el.value = journal[field] != null ? journal[field] : "";
+  });
+  updateStudyTotal(journal);
+
+  // 一句总结
+  const summaryInput = $("#summary-input");
+  if (summaryInput) summaryInput.value = journal.reflection?.summary || "";
 }
 
-function renderPapersList(journal) {
-  const papers = journal.papers || [];
-  const list = $("#paper-list");
-  const empty = $("#paper-empty");
-
-  if (!papers.length) {
-    list.innerHTML = "";
-    empty.classList.remove("hidden");
-    return;
-  }
-  empty.classList.add("hidden");
-  list.innerHTML = papers
-    .map((p) => {
-      const style = getNoteStyle(p.style).label;
-      const hasNote = (p.content || "").trim();
-      return `
-        <li class="paper-item" data-id="${p.id}">
-          <div class="paper-item-head">
-            <input type="text" class="paper-title-input" value="${escapeAttr(p.title)}" placeholder="文献标题" />
-            <div class="paper-actions">
-              <button type="button" data-action="note" title="写笔记">📝</button>
-              <button type="button" data-action="delete" title="删除">🗑</button>
-            </div>
-          </div>
-          <div class="paper-meta">${p.minutes ? `${p.minutes} 分钟` : "未记时长"} · ${style}${stickerCountLabel(p.placedStickers)}</div>
-          <button type="button" class="paper-open-note" data-action="note">
-            ${hasNote ? `<span class="paper-preview">${escapeHtml(p.content)}</span>` : "点击打开笔记本，记录本篇心得…"}
-          </button>
-        </li>
-      `;
-    })
-    .join("");
+function updateStudyTotal(journal) {
+  const m = (journal.studyMorning || 0) + (journal.studyAfternoon || 0) + (journal.studyEvening || 0);
+  const hint = $("#study-total-hint");
+  if (!hint) return;
+  hint.textContent = m > 0 ? `今日合计 ${m.toFixed(1)} 小时` : "";
 }
+
 
 function renderScale(selector, labels, value, field) {
   const el = $(selector);
@@ -391,6 +370,52 @@ function openExportDialog(defaultScope = "day") {
   $("#export-status").textContent = "";
   $("#export-status").className = "export-note";
   $("#export-dialog").showModal();
+}
+
+
+async function openDiaryPreview() {
+  if (!selectedKey) return;
+  const journal = getJournal(state, selectedKey);
+  const tasks = getTasksForDate(state, selectedKey);
+  const [y, m, d] = selectedKey.split("-").map(Number);
+  const dateLabel = `${y}年${m}月${d}日`;
+
+  // Build preview HTML using existing export module
+  const { buildExportHtml } = await import("./export-visual.js");
+  const sheet = buildExportHtml("day", state, selectedKey, dateLabel);
+  sheet.style.cssText = "position:fixed;left:0;top:0;width:100%;height:100%;overflow:auto;z-index:9999;background:#fffef9;padding:32px;box-sizing:border-box;";
+
+  // Add close button
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "× 关闭预览";
+  closeBtn.style.cssText = "position:fixed;top:16px;right:20px;z-index:10000;padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:20px;cursor:pointer;font-size:0.9rem;";
+  closeBtn.onclick = () => { sheet.remove(); closeBtn.remove(); exportBtns.remove(); };
+
+  // Add export buttons
+  const exportBtns = document.createElement("div");
+  exportBtns.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;gap:10px;";
+  exportBtns.innerHTML = `
+    <button class="btn primary small" id="diary-export-pdf">导出 PDF</button>
+    <button class="btn primary small" id="diary-export-png">导出图片</button>
+    <button class="btn secondary small" id="diary-export-md">导出 Markdown</button>
+  `;
+
+  document.body.appendChild(sheet);
+  document.body.appendChild(closeBtn);
+  document.body.appendChild(exportBtns);
+
+  exportBtns.querySelector("#diary-export-pdf").onclick = async () => {
+    const { exportAsPdf } = await import("./export-visual.js");
+    await exportAsPdf("day", state, selectedKey, dateLabel, `今天学了吗-${selectedKey}`);
+  };
+  exportBtns.querySelector("#diary-export-png").onclick = async () => {
+    const { exportAsPng } = await import("./export-visual.js");
+    await exportAsPng("day", state, selectedKey, dateLabel, `今天学了吗-${selectedKey}`);
+  };
+  exportBtns.querySelector("#diary-export-md").onclick = async () => {
+    const { exportAsMarkdown } = await import("./export.js");
+    exportAsMarkdown("day", state, selectedKey, dateLabel);
+  };
 }
 
 async function confirmExport() {
@@ -551,22 +576,6 @@ function getSelectedFromPicker(pickerId) {
   return sel?.dataset.id;
 }
 
-function addPaper() {
-  updateJournalForSelected((j) => ({
-    ...j,
-    papers: [
-      ...j.papers,
-      {
-        id: crypto.randomUUID(),
-        title: "",
-        minutes: 0,
-        content: "",
-        style: "minimal",
-        placedStickers: [],
-      },
-    ],
-  }));
-}
 
 function bindEvents() {
   document.querySelectorAll(".view-btn").forEach((btn) => {
@@ -622,8 +631,6 @@ function bindEvents() {
 
   $("#panel-close").addEventListener("click", closePanel);
   $("#add-task-btn").addEventListener("click", () => openTaskDialog());
-  $("#add-paper-btn").addEventListener("click", addPaper);
-
   $("#open-accomplished").addEventListener("click", () =>
     openNoteEditor({ type: "accomplished" })
   );
@@ -631,11 +638,12 @@ function bindEvents() {
     openNoteEditor({ type: "unfinished" })
   );
 
-  $("#open-export-btn").addEventListener("click", () => openExportDialog("day"));
-  $("#export-reflection-btn").addEventListener("click", () => openExportDialog("reflection"));
-  $("#export-close").addEventListener("click", () => $("#export-dialog").close());
-  $("#export-cancel").addEventListener("click", () => $("#export-dialog").close());
-  $("#export-confirm").addEventListener("click", confirmExport);
+  $("#export-close")?.addEventListener("click", () => $("#export-dialog")?.close());
+  $("#export-cancel")?.addEventListener("click", () => $("#export-dialog")?.close());
+  $("#export-confirm")?.addEventListener("click", confirmExport);
+
+  // 日记本预览
+  $("#open-diary-btn")?.addEventListener("click", openDiaryPreview);
 
   $("#open-theme-btn").addEventListener("click", openThemeDialog);
   $("#theme-close").addEventListener("click", () => $("#theme-dialog").close());
@@ -747,31 +755,6 @@ function bindEvents() {
     }
   });
 
-  $("#paper-list").addEventListener("click", (e) => {
-    const item = e.target.closest(".paper-item");
-    if (!item) return;
-    const id = item.dataset.id;
-    const action = e.target.closest("[data-action]")?.dataset.action;
-    if (action === "note") openNoteEditor({ type: "paper", paperId: id });
-    if (action === "delete") {
-      updateJournalForSelected((j) => ({
-        ...j,
-        papers: j.papers.filter((p) => p.id !== id),
-      }));
-    }
-  });
-
-  $("#paper-list").addEventListener("input", (e) => {
-    if (!e.target.classList.contains("paper-title-input")) return;
-    const item = e.target.closest(".paper-item");
-    const id = item?.dataset.id;
-    if (!id) return;
-    updateJournalForSelected((j) => ({
-      ...j,
-      papers: j.papers.map((p) => (p.id === id ? { ...p, title: e.target.value } : p)),
-    }));
-  });
-
   $("#category-picker")?.addEventListener("click", (e) => {
     const btn = e.target.closest(".cat-btn");
     if (!btn) return;
@@ -821,14 +804,26 @@ function bindEvents() {
     updateJournalField({ [field]: value });
   });
 
-  // 学习时长输入
+  // 学习时长三段输入
   $(".panel-body").addEventListener("input", (e) => {
-    if (e.target.id !== "study-minutes-input") return;
-    const val = parseInt(e.target.value, 10);
-    const minutes = isNaN(val) || val < 0 ? null : val;
-    updateJournalField({ studyMinutes: minutes });
-    const hint = $("#study-minutes-hint");
-    if (hint) hint.textContent = minutes > 0 && minutes >= 60 ? `≈ ${(minutes/60).toFixed(1)} 小时` : "";
+    const map = {
+      "study-morning":   "studyMorning",
+      "study-afternoon": "studyAfternoon",
+      "study-evening":   "studyEvening",
+    };
+    const field = map[e.target.id];
+    if (field) {
+      const val = parseFloat(e.target.value);
+      updateJournalField({ [field]: isNaN(val) || val < 0 ? null : Math.round(val * 10) / 10 });
+      updateStudyTotal(getJournal(state, selectedKey));
+    }
+    // 一句总结
+    if (e.target.id === "summary-input") {
+      updateJournalForSelected((j) => ({
+        ...j,
+        reflection: { ...j.reflection, summary: e.target.value },
+      }));
+    }
   });
 
   $("#note-style-picker").addEventListener("click", (e) => {

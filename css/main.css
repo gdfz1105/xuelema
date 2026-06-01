@@ -1467,3 +1467,133 @@ body::after {
   line-height: 1.6;
   margin: 0;
 }
+
+/* ═══════════════════════════════════════════
+   睡眠 scale 按钮与情绪/精力统一
+═══════════════════════════════════════════ */
+.scale[data-field="sleep"] .scale-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.45rem 0.25rem;  /* 与 base .scale-btn 一致 */
+}
+.scale[data-field="sleep"] .scale-btn.selected {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════
+   学习时长三段输入
+═══════════════════════════════════════════ */
+.study-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.study-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.study-slot-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  width: 60px;
+  flex-shrink: 0;
+}
+.study-slot-input {
+  width: 72px;
+  padding: 5px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: var(--font);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.study-slot-input:focus { border-color: var(--accent); }
+.study-slot-unit {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.study-total-hint {
+  font-size: 0.82rem;
+  color: var(--accent);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════
+   一句总结输入
+═══════════════════════════════════════════ */
+.summary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.summary-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.summary-row input[type="text"] {
+  flex: 1;
+  padding: 5px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.summary-row input[type="text"]:focus { border-color: var(--accent); }
+
+/* ═══════════════════════════════════════════
+   三环图（状态对比）
+═══════════════════════════════════════════ */
+.triple-rings {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0 6px;
+  border-bottom: 1px dashed var(--border);
+  margin-bottom: 4px;
+}
+.triple-ring-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.triple-ring-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════
+   综合小结卡（全宽）
+═══════════════════════════════════════════ */
+.insight-card-summary {
+  grid-column: 1 / -1;
+}
+.stats-insight-blocks {
+  grid-template-columns: repeat(3, 1fr);
+}
+/* 让综合小结的 guidance items 横向排列 */
+.insight-card-summary .guidance-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.insight-card-summary .guidance-item:last-of-type { border-bottom: none; }
