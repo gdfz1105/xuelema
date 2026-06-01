@@ -91,15 +91,23 @@ function render() {
   }
   renderLegend();
   updatePanelChrome();
-  // 统计视图时隐藏日历导航
+  // 统计视图时隐藏日历导航、侧边栏、重新打开按钮
   const navEl = document.querySelector(".nav");
   const todayBtn = document.querySelector(".today-btn");
   const legendEl = document.querySelector(".legend");
+  const reopenBtn = $("#reopen-panel-btn");
   if (navEl) navEl.style.visibility = view === "stats" ? "hidden" : "";
   if (todayBtn) todayBtn.style.visibility = view === "stats" ? "hidden" : "";
   if (legendEl) legendEl.style.display = view === "stats" ? "none" : "";
-  if (selectedKey && !detailPanel.classList.contains("hidden")) {
-    renderPanel(selectedKey);
+  if (view === "stats") {
+    // 统计视图：强制隐藏侧边栏和重新打开按钮
+    detailPanel.classList.add("hidden");
+    if (reopenBtn) reopenBtn.classList.add("hidden");
+  } else {
+    // 切回日历视图时，若之前有选中日期则重新显示面板
+    if (selectedKey && !detailPanel.classList.contains("hidden")) {
+      renderPanel(selectedKey);
+    }
   }
   updateStickerModeUI();
 }

@@ -1,5 +1,5 @@
 import { getCategory } from "./categories.js";
-import { getJournal, getTasksForDate, hasLiterature, hasReflection } from "./storage.js";
+import { getJournal, getTasksForDate, hasReflection } from "./storage.js";
 import { shapeClass } from "./shapes.js";
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
@@ -56,9 +56,6 @@ function renderIndicators(journal) {
     const cls =
       journal.energy <= 2 ? "energy-low" : journal.energy <= 3 ? "energy-mid" : "energy-high";
     parts.push(`<span class="indicator ${cls}" title="已记录精力"></span>`);
-  }
-  if (hasLiterature(journal)) {
-    parts.push('<span class="indicator lit" title="有文献记录"></span>');
   }
   if (hasReflection(journal)) {
     parts.push('<span class="indicator reflect" title="有反思记录"></span>');
