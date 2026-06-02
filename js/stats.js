@@ -237,8 +237,6 @@ function buildStateSourceBlock(s) {
       ? "数据积累中，记录更多天后可以看出规律。"
       : "目前各项关联不明显，状态受多种因素影响。";
 
-  const ringsHtml = buildTripleRings(s.avgMood, s.avgEnergy, s.avgSleep);
-
   const wdRow = wdMeans.length >= 3
     ? `<div class="corr-wdrow">
         <span class="corr-wdlabel">各天精力均值</span>
@@ -260,7 +258,7 @@ function buildStateSourceBlock(s) {
   ];
 
   return buildInsightCard({ icon: "🌙", title: "状态来源", question: "睡眠、精力与情绪的关联",
-    ringsHtml, rows, extra: wdRow, conclusion });
+    rows, extra: wdRow, conclusion });
 }
 
 /* ── 板块2：效率来源 ──────────────────────── */
@@ -544,7 +542,7 @@ const MOOD_RING_COLORS   = ['#f4a0b0','#f8c0cc','#fce0e6','#c8e8c0','#90d080'];
 const ENERGY_RING_COLORS = ['#b8d8f0','#c8e4f8','#ddf0fc','#a0d8c8','#60c0a8'];
 const SLEEP_RING_COLORS  = ['#c8b8e8','#d8ccf0','#ece8f8','#b8d8e8','#88b8d8'];
 
-function buildStateRingsSection(s) {
+function buildStateRingsSection(s, donutHtml, legendHtml) {
   const moodRing   = buildStateRingChart(s.dailyMoods,  '情绪', MOOD_RING_COLORS,   '😊', s.avgMood);
   const energyRing = buildStateRingChart(s.dailyEnergy, '精力', ENERGY_RING_COLORS, '⚡', s.avgEnergy);
   const sleepRing  = buildStateRingChart(s.dailySleep,  '睡眠', SLEEP_RING_COLORS,  '🌙', s.avgSleep);
@@ -557,12 +555,22 @@ function buildStateRingsSection(s) {
     <span class="srl-note">（颜色深→浅 = 低→高）</span>
   </div>`;
 
-  return `<div class="stats-chart-card stats-chart-card-wide">
-    <div class="stats-chart-title">情绪 · 精力 · 睡眠 分布环形图</div>
-    <div class="state-rings-row">
-      ${moodRing}${energyRing}${sleepRing}
+  return `<div class="stats-chart-card stats-chart-card-wide stats-rings-donut-row">
+    <div class="stats-rings-left">
+      <div class="stats-chart-title">情绪 · 精力 · 睡眠 分布</div>
+      <div class="state-rings-row">
+        ${moodRing}${energyRing}${sleepRing}
+      </div>
+      ${legend}
     </div>
-    ${legend}
+    <div class="stats-rings-divider"></div>
+    <div class="stats-rings-right">
+      <div class="stats-chart-title">任务类型分布</div>
+      <div class="stats-donut-row">
+        ${donutHtml}
+        <div class="stats-legend">${legendHtml}</div>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -600,7 +608,6 @@ export function renderStats(container, state, days) {
 
   const lineChart  = buildLineChart(s.dailyRates, s.dayKeys);
   const studyChart = buildStudyChart(s.dailyStudy, s.dayKeys);
-  const stateRings = buildStateRingsSection(s);
   const donut      = buildDonut(s.catDist, s.totalTasks);
   const corrPairs = [
     laggedPearson(s.dailySleep, s.dailyEnergy),
@@ -634,6 +641,8 @@ export function renderStats(container, state, days) {
         </div>`;
       }).join("")
     : `<div style="font-size:0.8rem;color:var(--text-muted)">暂无数据</div>`;
+
+  const stateRings = buildStateRingsSection(s, donut, legendHTML);
 
   container.innerHTML = `<div class="stats-view">
 
@@ -707,22 +716,13 @@ export function renderStats(container, state, days) {
     <!-- ③ 状态环形图 -->
     ${stateRings}
 
-    <!-- ④ 三个洞察板块 -->
-    <div class="stats-insight-blocks">
+    <!-- ④ 三个洞察板块：状态来源独占一行，效率+综合并排 -->
+    <div class="stats-insight-blocks stats-insight-blocks-top">
       ${stateBlock}
+    </div>
+    <div class="stats-insight-blocks stats-insight-blocks-bottom">
       ${effBlock}
       ${prefBlock}
-    </div>
-
-    <!-- ⑤ 底部：类型分布 -->
-    <div class="stats-bottom">
-      <div class="stats-chart-card stats-donut-card">
-        <div class="stats-chart-title">任务类型分布</div>
-        <div class="stats-donut-row">
-          ${donut}
-          <div class="stats-legend">${legendHTML}</div>
-        </div>
-      </div>
     </div>
 
   </div>`;

@@ -1259,11 +1259,16 @@ body::after {
 ═══════════════════════════════════════════ */
 .stats-insight-blocks {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
   gap: 12px;
 }
+.stats-insight-blocks-bottom {
+  grid-template-columns: repeat(2, 1fr);
+}
 @media (max-width: 900px) {
-  .stats-insight-blocks { grid-template-columns: 1fr; }
+  .stats-insight-blocks-bottom { grid-template-columns: 1fr; }
+  .stats-rings-donut-row { flex-direction: column; }
+  .stats-rings-divider { width: 100%; height: 1px; margin: 12px 0; }
 }
 
 .insight-card {
@@ -1582,11 +1587,18 @@ body::after {
 /* ═══════════════════════════════════════════
    综合小结卡（全宽）
 ═══════════════════════════════════════════ */
-.insight-card-summary {
-  grid-column: 1 / -1;
-}
 .stats-insight-blocks {
   grid-template-columns: repeat(3, 1fr);
+}
+.stats-insight-blocks-top {
+  grid-template-columns: 1fr;
+}
+.stats-insight-blocks-bottom {
+  grid-template-columns: repeat(2, 1fr);
+}
+/* 状态来源独占行时不需要 grid-column 撑满 */
+.stats-insight-blocks-top .insight-card {
+  grid-column: auto;
 }
 /* 让综合小结的 guidance items 横向排列 */
 .insight-card-summary .guidance-item {
@@ -1648,10 +1660,31 @@ body::after {
 /* ═══════════════════════════════════════════
    状态环形图
 ═══════════════════════════════════════════ */
+.stats-rings-donut-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+.stats-rings-left {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.stats-rings-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 0 18px;
+  flex-shrink: 0;
+}
+.stats-rings-right {
+  flex: 1;
+  min-width: 0;
+}
 .state-rings-row {
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-start;
   align-items: flex-start;
+  gap: 8px;
   padding: 12px 0 8px;
 }
 .state-ring-item {
