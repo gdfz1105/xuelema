@@ -480,45 +480,90 @@ function buildStudyChart(dailyStudy, dayKeys) {
   });
 }
 
-/* ── 状态条形（近7天）──────────────────────── */
+/* ── 三环状图：情绪/精力/睡眠分布 ─────────── */
 
-function buildMoodBars(dailyMoods, dailyEnergy, dailySleep, days) {
-  const n = dailyMoods.length;
-  const sl = Math.min(7, n);
-  const mSlice = dailyMoods.slice(-sl);
-  const eSlice = dailyEnergy.slice(-sl);
-  const sSlice = dailySleep.slice(-sl);
+/**
+ * 对一个数值序列（值1-5）统计各档出现次数，返回5段的分布百分比
+ */
+function levelDistribution(series) {
+  const counts = [0, 0, 0, 0, 0]; // index 0 = level 1
+  let total = 0;
+  series.forEach(d => {
+    if (d.val != null && d.val >= 1 && d.val <= 5) {
+      counts[d.val - 1]++;
+      total++;
+    }
+  });
+  if (total === 0) return null;
+  return counts.map(c => c / total);
+}
 
-  return mSlice.map((d, i) => {
-    const e  = eSlice[i];
-    const sv = sSlice[i];
-    const wd = n <= 7
-      ? WEEKDAY_SHORT[d.date.getDay()]
-      : `${d.date.getMonth()+1}/${d.date.getDate()}`;
-    const mPct = d.val  != null ? Math.round((d.val  / 5) * 100) : 0;
-    const ePct = e.val  != null ? Math.round((e.val  / 5) * 100) : 0;
-    const sPct = sv.val != null ? Math.round((sv.val / 5) * 100) : 0;
-    const mEmoji = d.val  != null ? ["😫","😕","😐","🙂","😊"][d.val  - 1] : "—";
-    const sEmoji = sv.val != null ? ["😵","😪","😑","😴","😌"][sv.val - 1] : "—";
-    return `<div class="stats-bar-row">
-      <span class="stats-bar-day">${wd}</span>
-      <div class="stats-bar-wrap">
-        <div class="stats-bar mood-bar-fill" style="width:${mPct}%">
-          <span class="stats-bar-label">${mEmoji}${d.val != null ? " "+d.val : ""}</span>
-        </div>
-      </div>
-      <div class="stats-bar-wrap">
-        <div class="stats-bar energy-bar-fill" style="width:${ePct}%">
-          <span class="stats-bar-label" style="color:var(--accent)">${e.val != null ? ENERGY_TEXT[e.val] : "—"}</span>
-        </div>
-      </div>
-      <div class="stats-bar-wrap">
-        <div class="stats-bar sleep-bar-fill" style="width:${sPct}%">
-          <span class="stats-bar-label">${sEmoji}${sv.val != null ? " "+SLEEP_TEXT[sv.val] : ""}</span>
-        </div>
-      </div>
+function buildStateRingChart(series, label, colors, emoji, avgVal) {
+  const dist = levelDistribution(series);
+  const R = 38, CX = 50, CY = 50, SW = 12;
+  const circ = 2 * Math.PI * R;
+
+  if (!dist) {
+    return `<div class="state-ring-item">
+      <svg viewBox="0 0 100 100" width="110" height="110">
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${SW}"/>
+        <text x="${CX}" y="${CY-6}" text-anchor="middle" font-size="18">${emoji}</text>
+        <text x="${CX}" y="${CY+10}" text-anchor="middle" font-size="9" fill="var(--text-muted)">未记录</text>
+      </svg>
+      <div class="state-ring-label">${label}</div>
     </div>`;
-  }).join("");
+  }
+
+  let offset = 0;
+  const segments = dist.map((pct, i) => {
+    if (pct === 0) return '';
+    const dash = pct * circ;
+    const seg = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
+      stroke="${colors[i]}" stroke-width="${SW}"
+      stroke-dasharray="${dash.toFixed(2)} ${circ.toFixed(2)}"
+      stroke-dashoffset="${(circ * 0.25 - offset).toFixed(2)}"
+      stroke-linecap="butt"/>`;
+    offset += dash;
+    return seg;
+  }).join('');
+
+  const avgText = avgVal != null ? parseFloat(avgVal).toFixed(1) : '—';
+
+  return `<div class="state-ring-item">
+    <svg viewBox="0 0 100 100" width="110" height="110">
+      <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${SW}"/>
+      ${segments}
+      <text x="${CX}" y="${CY-6}" text-anchor="middle" font-size="18">${emoji}</text>
+      <text x="${CX}" y="${CY+10}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">${avgText}</text>
+    </svg>
+    <div class="state-ring-label">${label}</div>
+  </div>`;
+}
+
+const MOOD_RING_COLORS   = ['#f4a0b0','#f8c0cc','#fce0e6','#c8e8c0','#90d080'];
+const ENERGY_RING_COLORS = ['#b8d8f0','#c8e4f8','#ddf0fc','#a0d8c8','#60c0a8'];
+const SLEEP_RING_COLORS  = ['#c8b8e8','#d8ccf0','#ece8f8','#b8d8e8','#88b8d8'];
+
+function buildStateRingsSection(s) {
+  const moodRing   = buildStateRingChart(s.dailyMoods,  '情绪', MOOD_RING_COLORS,   '😊', s.avgMood);
+  const energyRing = buildStateRingChart(s.dailyEnergy, '精力', ENERGY_RING_COLORS, '⚡', s.avgEnergy);
+  const sleepRing  = buildStateRingChart(s.dailySleep,  '睡眠', SLEEP_RING_COLORS,  '🌙', s.avgSleep);
+
+  // 色阶图例
+  const legend = `<div class="state-ring-legend">
+    ${[1,2,3,4,5].map((v,i) => `<span class="srl-item">
+      <span class="srl-dot" style="background:${MOOD_RING_COLORS[i]}"></span>${MOOD_TEXT[v]}
+    </span>`).join('')}
+    <span class="srl-note">（颜色深→浅 = 低→高）</span>
+  </div>`;
+
+  return `<div class="stats-chart-card stats-chart-card-wide">
+    <div class="stats-chart-title">情绪 · 精力 · 睡眠 分布环形图</div>
+    <div class="state-rings-row">
+      ${moodRing}${energyRing}${sleepRing}
+    </div>
+    ${legend}
+  </div>`;
 }
 
 /* ── 环形图 ──────────────────────────────── */
@@ -555,10 +600,8 @@ export function renderStats(container, state, days) {
 
   const lineChart  = buildLineChart(s.dailyRates, s.dayKeys);
   const studyChart = buildStudyChart(s.dailyStudy, s.dayKeys);
-  const moodBars   = buildMoodBars(s.dailyMoods, s.dailyEnergy, s.dailySleep, days);
+  const stateRings = buildStateRingsSection(s);
   const donut      = buildDonut(s.catDist, s.totalTasks);
-  const insight    = generateInsight(s);
-
   const corrPairs = [
     laggedPearson(s.dailySleep, s.dailyEnergy),
     laggedPearson(s.dailySleep, s.dailyMoods),
@@ -603,64 +646,48 @@ export function renderStats(container, state, days) {
       </div>
     </div>
 
-    <!-- ① 指标总览卡（合并为一个框） -->
+    <!-- ① 指标总览（紧凑横条） -->
     <div class="stats-overview-card">
-      <div class="stats-overview-grid">
-        <div class="stats-ov-item">
-          <span class="stats-ov-icon">✅</span>
-          <div>
-            <div class="stats-ov-val">${s.completionRate}%</div>
-            <div class="stats-ov-label">任务完成率</div>
-            <div class="stats-ov-sub">${s.doneTasks} / ${s.totalTasks} 项</div>
-          </div>
+      <div class="stats-ov-strip">
+        <div class="stats-ov-chip">
+          <span class="soc-icon">✅</span>
+          <span class="soc-val">${s.completionRate}%</span>
+          <span class="soc-label">完成率</span>
+          <span class="soc-sub">${s.doneTasks}/${s.totalTasks}项</span>
         </div>
-        <div class="stats-ov-item">
-          <span class="stats-ov-icon">📅</span>
-          <div>
-            <div class="stats-ov-val">${streakText}</div>
-            <div class="stats-ov-label">连续打卡</div>
-            <div class="stats-ov-sub">${s.streak >= 3 ? "习惯养成中" : "每天记一点"}</div>
-          </div>
+        <div class="soc-divider"></div>
+        <div class="stats-ov-chip">
+          <span class="soc-icon">📅</span>
+          <span class="soc-val">${s.streak > 0 ? s.streak+"天🔥" : "0天"}</span>
+          <span class="soc-label">连续打卡</span>
         </div>
-        <div class="stats-ov-item">
-          <span class="stats-ov-icon">😊</span>
-          <div>
-            <div class="stats-ov-val">${fmtScale(s.avgMood)}</div>
-            <div class="stats-ov-label">平均情绪</div>
-            <div class="stats-ov-sub">${avgMoodSub}</div>
-          </div>
+        <div class="soc-divider"></div>
+        <div class="stats-ov-chip">
+          <span class="soc-icon">😊</span>
+          <span class="soc-val">${s.avgMood ?? "—"}</span>
+          <span class="soc-label">情绪均值</span>
+          <span class="soc-sub">${avgMoodSub}</span>
         </div>
-        <div class="stats-ov-item">
-          <span class="stats-ov-icon">⚡</span>
-          <div>
-            <div class="stats-ov-val">${fmtScale(s.avgEnergy)}</div>
-            <div class="stats-ov-label">平均精力</div>
-            <div class="stats-ov-sub">${avgEnergySub}</div>
-          </div>
+        <div class="soc-divider"></div>
+        <div class="stats-ov-chip">
+          <span class="soc-icon">⚡</span>
+          <span class="soc-val">${s.avgEnergy ?? "—"}</span>
+          <span class="soc-label">精力均值</span>
+          <span class="soc-sub">${avgEnergySub}</span>
         </div>
-        <div class="stats-ov-item">
-          <span class="stats-ov-icon">🌙</span>
-          <div>
-            <div class="stats-ov-val">${fmtScale(s.avgSleep)}</div>
-            <div class="stats-ov-label">平均睡眠</div>
-            <div class="stats-ov-sub">${avgSleepSub}</div>
-          </div>
+        <div class="soc-divider"></div>
+        <div class="stats-ov-chip">
+          <span class="soc-icon">🌙</span>
+          <span class="soc-val">${s.avgSleep ?? "—"}</span>
+          <span class="soc-label">睡眠均值</span>
+          <span class="soc-sub">${avgSleepSub}</span>
         </div>
-        <div class="stats-ov-item">
-          <span class="stats-ov-icon">⏱</span>
-          <div>
-            <div class="stats-ov-val">${studyText}</div>
-            <div class="stats-ov-label">累计学习</div>
-            <div class="stats-ov-sub">${studySub}</div>
-          </div>
-        </div>
-        <div class="stats-ov-item">
-          <span class="stats-ov-icon">📚</span>
-          <div>
-            <div class="stats-ov-val">${litText}</div>
-            <div class="stats-ov-label">文献阅读</div>
-            <div class="stats-ov-sub">${litSub}</div>
-          </div>
+        <div class="soc-divider"></div>
+        <div class="stats-ov-chip">
+          <span class="soc-icon">⏱</span>
+          <span class="soc-val">${studyText}</span>
+          <span class="soc-label">累计学习</span>
+          <span class="soc-sub">${studySub}</span>
         </div>
       </div>
     </div>
@@ -677,16 +704,8 @@ export function renderStats(container, state, days) {
       </div>
     </div>
 
-    <!-- ③ 状态条形 -->
-    <div class="stats-chart-card stats-chart-card-wide">
-      <div class="stats-chart-title">情绪 😊 · 精力 ⚡ · 睡眠 🌙（近 ${Math.min(days,7)} 天）</div>
-      <div class="stats-bar-legend">
-        <span class="stats-bar-legend-dot mood-dot"></span>情绪
-        <span class="stats-bar-legend-dot energy-dot" style="margin-left:10px"></span>精力
-        <span class="stats-bar-legend-dot sleep-dot"  style="margin-left:10px"></span>睡眠
-      </div>
-      <div class="stats-bars">${moodBars}</div>
-    </div>
+    <!-- ③ 状态环形图 -->
+    ${stateRings}
 
     <!-- ④ 三个洞察板块 -->
     <div class="stats-insight-blocks">
@@ -695,20 +714,13 @@ export function renderStats(container, state, days) {
       ${prefBlock}
     </div>
 
-    <!-- ⑤ 底部：类型分布 + 近期小结 -->
+    <!-- ⑤ 底部：类型分布 -->
     <div class="stats-bottom">
       <div class="stats-chart-card stats-donut-card">
         <div class="stats-chart-title">任务类型分布</div>
         <div class="stats-donut-row">
           ${donut}
           <div class="stats-legend">${legendHTML}</div>
-        </div>
-      </div>
-      <div class="stats-insight-card">
-        <div class="stats-insight-icon">🌱</div>
-        <div>
-          <div class="stats-insight-title">近期小结</div>
-          <div class="stats-insight-body">${insight}</div>
         </div>
       </div>
     </div>

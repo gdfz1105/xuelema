@@ -100,8 +100,9 @@ function render() {
   if (todayBtn) todayBtn.style.visibility = view === "stats" ? "hidden" : "";
   if (legendEl) legendEl.style.display = view === "stats" ? "none" : "";
   if (view === "stats") {
-    // 统计视图：强制隐藏侧边栏和重新打开按钮
+    // 统计视图：强制隐藏侧边栏和重新打开按钮，重置双栏布局
     detailPanel.classList.add("hidden");
+    mainEl.classList.remove("has-panel");
     if (reopenBtn) reopenBtn.classList.add("hidden");
   } else {
     // 切回日历视图时，若之前有选中日期则重新显示面板

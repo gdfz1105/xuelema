@@ -142,10 +142,10 @@ export function renderMonthCalendar(container, state, anchor, selectedKey) {
   const cells = [];
   let cursor = new Date(start);
 
-  for (let i = 0; i < 42; i++) {
+  for (let i = 0; i < 35; i++) {
     const otherMonth = cursor.getMonth() !== anchor.getMonth();
     cells.push(
-      buildDayCell(cursor, state, { selectedKey, today, otherMonth, maxBlocks: 3 })
+      buildDayCell(cursor, state, { selectedKey, today, otherMonth, maxBlocks: 4 })
     );
     cursor = addDays(cursor, 1);
   }

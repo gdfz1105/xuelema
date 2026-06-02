@@ -1597,3 +1597,97 @@ body::after {
   border-bottom: 1px dashed var(--border);
 }
 .insight-card-summary .guidance-item:last-of-type { border-bottom: none; }
+
+/* ═══════════════════════════════════════════
+   月视图 7×5：更高格子 + 更小日期数字
+═══════════════════════════════════════════ */
+.month-grid .day-cell {
+  min-height: 108px;
+  max-height: 108px;
+  height: 108px;
+}
+.month-grid .day-num {
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-bottom: 1px;
+}
+
+/* ═══════════════════════════════════════════
+   统计总览：紧凑横条
+═══════════════════════════════════════════ */
+.stats-ov-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 6px 4px;
+}
+.stats-ov-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  flex-shrink: 0;
+}
+.soc-icon { font-size: 1rem; }
+.soc-val  { font-size: 1rem; font-weight: 700; color: var(--text); }
+.soc-label{ font-size: 0.72rem; color: var(--text-muted); }
+.soc-sub  { font-size: 0.68rem; color: var(--text-muted); margin-left: 2px; }
+.soc-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+@media (max-width: 700px) {
+  .stats-ov-strip { flex-direction: column; align-items: flex-start; }
+  .soc-divider { width: 100%; height: 1px; }
+}
+
+/* ═══════════════════════════════════════════
+   状态环形图
+═══════════════════════════════════════════ */
+.state-rings-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 12px 0 8px;
+}
+.state-ring-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.state-ring-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.state-ring-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  margin-top: 4px;
+}
+.srl-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.srl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.srl-note {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
