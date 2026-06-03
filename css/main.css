@@ -1632,11 +1632,11 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════
-   指标总览：两行 3+3 网格
+   指标总览：单行 4 项
 ═══════════════════════════════════════════ */
 .stats-overview-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 .stats-ov-card {
@@ -1649,10 +1649,8 @@ body::after {
   align-items: center;
   gap: 6px;
 }
-.stats-ov-card-wide {
+.stats-ov-card-full {
   grid-column: 1 / -1;
-  justify-content: flex-start;
-  gap: 32px;
 }
 .stats-ov-chip2 {
   display: flex;
@@ -1688,6 +1686,8 @@ body::after {
 .stats-rings-right {
   flex: 1 1 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 .state-rings-row {
   display: flex;
@@ -1695,6 +1695,13 @@ body::after {
   align-items: flex-start;
   gap: 8px;
   padding: 12px 0 8px;
+}
+/* 任务分布图例：紧凑两列 */
+.stats-legend-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  padding: 0 4px;
 }
 
 /* ═══════════════════════════════════════════
@@ -1736,6 +1743,14 @@ body::after {
   white-space: nowrap;
 }
 .pattern-note { font-size: 0.72rem; color: var(--text-muted); }
+.pattern-caveat {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  line-height: 1.5;
+}
 
 /* ═══════════════════════════════════════════
    综合分析：section blocks

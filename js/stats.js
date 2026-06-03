@@ -212,19 +212,19 @@ function buildTripleRings(avgMood, avgEnergy, avgSleep) {
 /* ── 板块1：我的规律 ──────────────────────── */
 
 function buildMyPatternsBlock(s) {
-  // 计算5条关联
-  const sleepEnergy  = laggedPearson(s.dailySleep,  s.dailyEnergy);   // 睡眠→次日精力
-  const moodEnergy   = pearson(s.dailyMoods.map(d=>d.val), s.dailyEnergy.map(d=>d.val)); // 情绪↔精力
-  const rates        = s.dailyRates.map(d => ({ ...d, val: d.rate }));
-  const energyRate   = pearson(s.dailyEnergy.map(d=>d.val), rates.map(d=>d.val));        // 精力→完成率
-  const energyStudy  = pearson(s.dailyEnergy.map(d=>d.val), s.dailyStudy.map(d=>d.val)); // 精力→学习时长
-  const studyRate    = pearson(s.dailyStudy.map(d=>d.val),  rates.map(d=>d.val));        // 学习时长→完成率
+  // 计算5条关联（去掉噪音大的"精力→学习时长"和"学习时长→完成率"）
+  const rates       = s.dailyRates.map(d => ({ ...d, val: d.rate }));
+  const sleepEnergy = laggedPearson(s.dailySleep,  s.dailyEnergy);   // 睡眠→次日精力（滞后）
+  const moodEnergy  = pearson(s.dailyMoods.map(d=>d.val), s.dailyEnergy.map(d=>d.val)); // 情绪↔精力
+  const energyRate  = pearson(s.dailyEnergy.map(d=>d.val), rates.map(d=>d.val));        // 精力→完成率
+  const moodRate    = pearson(s.dailyMoods.map(d=>d.val),  rates.map(d=>d.val));        // 情绪→完成率
+  const sleepRate   = laggedPearson(s.dailySleep, rates);                               // 睡眠→次日完成率（滞后）
 
-  const c_se  = corrStrength(sleepEnergy.r,  sleepEnergy.n);
-  const c_me  = corrStrength(moodEnergy.r,   moodEnergy.n);
-  const c_er  = corrStrength(energyRate.r,   energyRate.n);
-  const c_est = corrStrength(energyStudy.r,  energyStudy.n);
-  const c_str = corrStrength(studyRate.r,    studyRate.n);
+  const c_se  = corrStrength(sleepEnergy.r, sleepEnergy.n);
+  const c_me  = corrStrength(moodEnergy.r,  moodEnergy.n);
+  const c_er  = corrStrength(energyRate.r,  energyRate.n);
+  const c_mr  = corrStrength(moodRate.r,    moodRate.n);
+  const c_sr  = corrStrength(sleepRate.r,   sleepRate.n);
 
   const patternRows = [
     {
@@ -252,20 +252,20 @@ function buildMyPatternsBlock(s) {
       c: c_er,
     },
     {
-      icon: "⚡",
-      label: "精力 → 学习时长",
+      icon: "😊",
+      label: "情绪 → 完成率",
       tag: "",
       tagColor: "",
-      note: "精力高时是否学得更久",
-      c: c_est,
+      note: "心情好时更容易完成任务？",
+      c: c_mr,
     },
     {
-      icon: "⏱",
-      label: "学习时长 → 完成率",
+      icon: "🌙",
+      label: "睡眠 → 次日完成率",
       tag: "",
       tagColor: "",
-      note: "学得多和完成任务多有关吗",
-      c: c_str,
+      note: "昨晚睡好，今天事情完成得更多？",
+      c: c_sr,
     },
   ];
 
@@ -290,11 +290,13 @@ function buildMyPatternsBlock(s) {
     { label: "睡眠→精力", c: c_se },
     { label: "情绪↔精力", c: c_me },
     { label: "精力→完成率", c: c_er },
+    { label: "情绪→完成率", c: c_mr },
+    { label: "睡眠→完成率", c: c_sr },
   ].filter(x => x.c.r !== null && Math.abs(x.c.r) >= 0.35)
    .sort((a, b) => Math.abs(b.c.r) - Math.abs(a.c.r));
 
   const conclusion = topCorr.length
-    ? `最显著规律：${topCorr.map(x => `${x.label}（r=${x.c.r.toFixed(2)}）`).join("、")}。`
+    ? `最显著规律：${topCorr.slice(0,2).map(x => `${x.label}（r=${x.c.r.toFixed(2)}）`).join("、")}。`
     : sleepEnergy.n < 4
       ? "数据积累中，记录7天以上后规律会更清晰。"
       : "目前各项关联不明显，继续积累数据。";
@@ -304,7 +306,7 @@ function buildMyPatternsBlock(s) {
       <span class="insight-card-icon">📈</span>
       <div>
         <div class="insight-card-title">我的规律</div>
-        <div class="insight-card-q">状态、时间与效率之间的关联</div>
+        <div class="insight-card-q">状态与任务完成度的关联</div>
       </div>
     </div>
     ${rowsHtml}
@@ -312,6 +314,7 @@ function buildMyPatternsBlock(s) {
       <span class="insight-conclusion-dot">💡</span>
       <p>${conclusion}</p>
     </div>
+    <p class="pattern-caveat">· 完成率受任务难度、数量影响；学习时长受当天安排影响。相关性供参考，不代表因果。</p>
   </div>`;
 }
 
@@ -643,10 +646,10 @@ function buildStateRingsSection(s, donutHtml, legendHtml) {
     <div class="stats-rings-divider"></div>
     <div class="stats-rings-right">
       <div class="stats-chart-title">任务类型分布</div>
-      <div class="stats-donut-row">
+      <div class="state-rings-row">
         ${donutHtml}
-        <div class="stats-legend">${legendHtml}</div>
       </div>
+      <div class="stats-legend stats-legend-compact">${legendHtml}</div>
     </div>
   </div>`;
 }
@@ -654,28 +657,34 @@ function buildStateRingsSection(s, donutHtml, legendHtml) {
 /* ── 环形图 ──────────────────────────────── */
 
 function buildDonut(catDist, total) {
+  const R = 38, CX = 50, CY = 50, SW = 12, circ = 2 * Math.PI * R;
   if (!catDist.length || total === 0) {
-    return `<svg viewBox="0 0 80 80" style="width:80px;height:80px">
-      <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border)" stroke-width="14"/>
-      <text x="40" y="44" text-anchor="middle" font-size="9" fill="var(--text-muted)">暂无</text>
-    </svg>`;
+    return `<div class="state-ring-item">
+      <svg viewBox="0 0 100 100" width="110" height="110">
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${SW}"/>
+        <text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="9" fill="var(--text-muted)">暂无数据</text>
+      </svg>
+      <div class="state-ring-label">任务分布</div>
+    </div>`;
   }
-  const R = 30, CX = 40, CY = 40, circ = 2 * Math.PI * R;
   let offset = 0;
-  const segs = catDist.slice(0, 5).map(c => {
+  const segs = catDist.slice(0, 6).map(c => {
     const dash = (c.count / total) * circ;
-    const s = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${c.color}" stroke-width="14"
+    const seg = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${c.color}" stroke-width="${SW}"
       stroke-dasharray="${dash.toFixed(2)} ${circ.toFixed(2)}"
-      stroke-dashoffset="${(-offset).toFixed(2)}"
-      transform="rotate(-90 ${CX} ${CY})"/>`;
+      stroke-dashoffset="${(circ * 0.25 - offset).toFixed(2)}"
+      stroke-linecap="butt"/>`;
     offset += dash;
-    return s;
+    return seg;
   });
-  return `<svg viewBox="0 0 80 80" style="width:80px;height:80px;flex-shrink:0">
-    <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="14"/>
-    ${segs.join("")}
-    <text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${total}项</text>
-  </svg>`;
+  return `<div class="state-ring-item">
+    <svg viewBox="0 0 100 100" width="110" height="110" style="flex-shrink:0">
+      <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="${SW}"/>
+      ${segs.join("")}
+      <text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="10" fill="var(--text-muted)">${total}项</text>
+    </svg>
+    <div class="state-ring-label">任务分布</div>
+  </div>`;
 }
 
 /* ── 主渲染 ──────────────────────────────── */
@@ -691,9 +700,6 @@ export function renderStats(container, state, days) {
   const analysisBlock  = buildAnalysisBlock(s);
 
   // 数值格式化
-  const avgMoodSub   = s.avgMood   ? MOOD_TEXT[Math.round(parseFloat(s.avgMood))]     : "—";
-  const avgEnergySub = s.avgEnergy ? ENERGY_TEXT[Math.round(parseFloat(s.avgEnergy))] : "—";
-  const avgSleepSub  = s.avgSleep  ? SLEEP_TEXT[Math.round(parseFloat(s.avgSleep))]   : "—";
   const studyText = s.studyTotal > 0 ? `${s.studyTotal.toFixed(1)} 小时` : "0 小时";
   const studySub  = s.studyDays > 0 ? `日均 ${(s.studyTotal/s.studyDays).toFixed(1)} 小时` : "暂无记录";
 
@@ -731,19 +737,12 @@ export function renderStats(container, state, days) {
       </div>
     </div>
 
-    <!-- ① 指标总览：两行 3+3 网格卡片 -->
+    <!-- ① 指标总览：单行 4 项 -->
     <div class="stats-overview-grid">
-      <div class="stats-ov-card">
+      <div class="stats-ov-card stats-ov-card-full">
         ${chip("✅", `${s.completionRate}%`, "完成率", `${s.doneTasks}/${s.totalTasks} 项`)}
         ${chip("📅", s.streak > 0 ? s.streak+"天🔥" : "0天", "连续打卡", "")}
         ${chip("📖", s.litPapers > 0 ? s.litPapers+"篇" : "0篇", "文献阅读", s.litMinutes > 0 ? `${s.litMinutes}分钟` : "")}
-      </div>
-      <div class="stats-ov-card">
-        ${chip("😊", s.avgMood ?? "—", "情绪均值", avgMoodSub)}
-        ${chip("⚡", s.avgEnergy ?? "—", "精力均值", avgEnergySub)}
-        ${chip("🌙", s.avgSleep ?? "—", "睡眠均值", avgSleepSub)}
-      </div>
-      <div class="stats-ov-card stats-ov-card-wide">
         ${chip("⏱", studyText, "累计学习", studySub)}
       </div>
     </div>
