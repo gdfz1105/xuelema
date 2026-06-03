@@ -209,164 +209,242 @@ function buildTripleRings(avgMood, avgEnergy, avgSleep) {
 
 /* ── 板块1：状态对比（睡眠+精力+情绪） ───── */
 
-function buildStateSourceBlock(s) {
-  const sleepEnergy = laggedPearson(s.dailySleep,  s.dailyEnergy);
-  const sleepMood   = laggedPearson(s.dailySleep,  s.dailyMoods);
+/* ── 板块1：我的规律 ──────────────────────── */
 
-  // 星期几 → 精力
-  const wdMeans = groupMeans(s.dailyEnergy.map(d => [d.date.getDay(), d.val]))
-    .sort((a, b) => Number(a.key) - Number(b.key));
-  const wdSorted = [...wdMeans].sort((a, b) => b.mean - a.mean);
-  const bestWd  = wdSorted[0];
-  const worstWd = wdSorted[wdSorted.length - 1];
+function buildMyPatternsBlock(s) {
+  // 计算5条关联
+  const sleepEnergy  = laggedPearson(s.dailySleep,  s.dailyEnergy);   // 睡眠→次日精力
+  const moodEnergy   = pearson(s.dailyMoods.map(d=>d.val), s.dailyEnergy.map(d=>d.val)); // 情绪↔精力
+  const rates        = s.dailyRates.map(d => ({ ...d, val: d.rate }));
+  const energyRate   = pearson(s.dailyEnergy.map(d=>d.val), rates.map(d=>d.val));        // 精力→完成率
+  const energyStudy  = pearson(s.dailyEnergy.map(d=>d.val), s.dailyStudy.map(d=>d.val)); // 精力→学习时长
+  const studyRate    = pearson(s.dailyStudy.map(d=>d.val),  rates.map(d=>d.val));        // 学习时长→完成率
 
-  const se = corrStrength(sleepEnergy.r, sleepEnergy.n);
-  const sm = corrStrength(sleepMood.r,   sleepMood.n);
+  const c_se  = corrStrength(sleepEnergy.r,  sleepEnergy.n);
+  const c_me  = corrStrength(moodEnergy.r,   moodEnergy.n);
+  const c_er  = corrStrength(energyRate.r,   energyRate.n);
+  const c_est = corrStrength(energyStudy.r,  energyStudy.n);
+  const c_str = corrStrength(studyRate.r,    studyRate.n);
 
-  // 结论
-  const parts = [];
-  if (se.r !== null && Math.abs(se.r) >= 0.35)
-    parts.push(se.r > 0 ? `睡好觉对次日精力有明显正向作用` : `精力与前晚睡眠关联较弱`);
-  if (sm.r !== null && Math.abs(sm.r) >= 0.35)
-    parts.push(sm.r > 0 ? `睡眠质量同样影响次日情绪` : `睡眠对情绪的影响不明显`);
-  if (wdMeans.length >= 3 && bestWd && worstWd && bestWd.key !== worstWd.key)
-    parts.push(`${WEEKDAY_SHORT[bestWd.key]} 精力最好，${WEEKDAY_SHORT[worstWd.key]} 最低`);
-  const conclusion = parts.length
-    ? parts.join("；") + "。"
-    : se.r === null && sm.r === null
-      ? "数据积累中，记录更多天后可以看出规律。"
-      : "目前各项关联不明显，状态受多种因素影响。";
+  const patternRows = [
+    {
+      icon: "🌙",
+      label: "睡眠 → 次日精力",
+      tag: "最重要",
+      tagColor: "#f87171",
+      note: "最接近因果关系，睡好了第二天更有劲",
+      c: c_se,
+    },
+    {
+      icon: "😊",
+      label: "情绪 ↔ 精力",
+      tag: "同步观察",
+      tagColor: "#a78bfa",
+      note: "二者是否同步变化、互相影响",
+      c: c_me,
+    },
+    {
+      icon: "⚡",
+      label: "精力 → 完成率",
+      tag: "核心指标",
+      tagColor: "#38bdf8",
+      note: "精力充沛时任务完成情况更好？",
+      c: c_er,
+    },
+    {
+      icon: "⚡",
+      label: "精力 → 学习时长",
+      tag: "",
+      tagColor: "",
+      note: "精力高时是否学得更久",
+      c: c_est,
+    },
+    {
+      icon: "⏱",
+      label: "学习时长 → 完成率",
+      tag: "",
+      tagColor: "",
+      note: "学得多和完成任务多有关吗",
+      c: c_str,
+    },
+  ];
 
-  const wdRow = wdMeans.length >= 3
-    ? `<div class="corr-wdrow">
-        <span class="corr-wdlabel">各天精力均值</span>
-        <div class="corr-wdbars">
-          ${wdMeans.map(w =>
-            `<div class="corr-wd-item">
-              <span class="corr-wd-name">${WEEKDAY_SHORT[w.key]}</span>
-              <div class="corr-wd-bar-wrap"><div class="corr-wd-bar" style="width:${Math.round((w.mean/5)*100)}%"></div></div>
-              <span class="corr-wd-val">${w.mean.toFixed(1)}</span>
-            </div>`
-          ).join("")}
+  const rowsHtml = patternRows.map(({ icon, label, tag, tagColor, note, c }) => {
+    const tagHtml = tag
+      ? `<span class="pattern-tag" style="background:${tagColor}18;color:${tagColor};border-color:${tagColor}40">${tag}</span>`
+      : "";
+    return `<div class="pattern-row">
+      <div class="pattern-row-left">
+        <span class="pattern-icon">${icon}</span>
+        <div class="pattern-info">
+          <div class="pattern-label">${label} ${tagHtml}</div>
+          <div class="pattern-note">${note}</div>
         </div>
-      </div>`
-    : "";
+      </div>
+      <div class="insight-row-right">${corrBar(c)}</div>
+    </div>`;
+  }).join("");
 
-  const rows = [
-    { label: "睡眠 → 次日精力", note: "昨晚睡好，今天精力更好？", s: se },
-    { label: "睡眠 → 次日情绪", note: "睡眠质量影响心情？",       s: sm },
-  ];
+  // 主要结论
+  const topCorr = [
+    { label: "睡眠→精力", c: c_se },
+    { label: "情绪↔精力", c: c_me },
+    { label: "精力→完成率", c: c_er },
+  ].filter(x => x.c.r !== null && Math.abs(x.c.r) >= 0.35)
+   .sort((a, b) => Math.abs(b.c.r) - Math.abs(a.c.r));
 
-  return buildInsightCard({ icon: "🌙", title: "状态来源", question: "睡眠、精力与情绪的关联",
-    rows, extra: wdRow, conclusion });
-}
+  const conclusion = topCorr.length
+    ? `最显著规律：${topCorr.map(x => `${x.label}（r=${x.c.r.toFixed(2)}）`).join("、")}。`
+    : sleepEnergy.n < 4
+      ? "数据积累中，记录7天以上后规律会更清晰。"
+      : "目前各项关联不明显，继续积累数据。";
 
-/* ── 板块2：效率来源 ──────────────────────── */
-
-function buildEfficiencyBlock(s) {
-  const rates   = s.dailyRates.map(d => ({ ...d, val: d.rate }));
-  const energyR = pearson(s.dailyEnergy.map(d => d.val), rates.map(d => d.val));
-  const sleepR  = laggedPearson(s.dailySleep, rates);
-  const moodR   = pearson(s.dailyMoods.map(d => d.val),  rates.map(d => d.val));
-  const studyR  = pearson(s.dailyStudy.map(d => d.val),  rates.map(d => d.val));
-
-  const se = corrStrength(energyR.r, energyR.n);
-  const ss = corrStrength(sleepR.r,  sleepR.n);
-  const sm = corrStrength(moodR.r,   moodR.n);
-  const st = corrStrength(studyR.r,  studyR.n);
-
-  const top = [
-    { label: "精力", s: se }, { label: "睡眠", s: ss },
-    { label: "情绪", s: sm }, { label: "学习时长", s: st },
-  ].filter(x => x.s.r !== null && Math.abs(x.s.r) >= 0.35)
-   .sort((a, b) => Math.abs(b.s.r) - Math.abs(a.s.r));
-
-  const conclusion = top.length
-    ? top.map(x => `${x.label}对完成率${x.s.r > 0 ? "正向" : "负向"}影响（r=${x.s.r.toFixed(2)}）`).join("；") + "。"
-    : energyR.n >= 4 || moodR.n >= 4
-      ? "任务完成率目前与状态指标关联不强，可能主要受任务数量影响。"
-      : "数据积累中，多记录几天后更准确。";
-
-  const rows = [
-    { label: "精力 → 完成率",      note: "精力好时任务完成得更多？",    s: se },
-    { label: "睡眠 → 次日完成率",  note: "睡好觉次日效率更高？",       s: ss },
-    { label: "情绪 → 完成率",      note: "心情好时更容易完成任务？",    s: sm },
-    { label: "学习时长 → 完成率",  note: "学得多和完成任务多有关吗？",  s: st },
-  ];
-
-  return buildInsightCard({ icon: "⚡", title: "效率来源",
-    question: "任务完成度与状态、学习时长的关系", rows, conclusion });
-}
-
-/* ── 板块3：综合小结（替换学习偏好）─────── */
-
-function buildSummaryBlock(s, corrs) {
-  const lines = [];
-
-  // 完成率评价
-  if (s.totalTasks === 0) {
-    lines.push({ icon: "📋", text: "这段时间暂无任务记录，可以在日历中规划每天的学习任务。" });
-  } else {
-    const rateText = s.completionRate >= 80 ? `完成率高达 ${s.completionRate}%，执行力很强！`
-      : s.completionRate >= 50 ? `完成率 ${s.completionRate}%，整体状态稳定。`
-      : `完成率 ${s.completionRate}%，任务安排可以适当精简，集中精力在重要项目上。`;
-    lines.push({ icon: "✅", text: rateText });
-  }
-
-  // 学习时长
-  if (s.studyTotal > 0) {
-    const avg = s.studyDays > 0 ? (s.studyTotal / s.studyDays).toFixed(1) : 0;
-    const studyComment = parseFloat(avg) >= 6 ? "学习强度较高，注意劳逸结合。"
-      : parseFloat(avg) >= 3 ? "学习时长适中，保持节奏！"
-      : "每日学习时长偏少，可以尝试增加专注时间。";
-    lines.push({ icon: "⏱", text: `累计学习 ${s.studyTotal.toFixed(1)} 小时，日均 ${avg} 小时。${studyComment}` });
-  }
-
-  // 状态评价
-  if (s.avgSleep !== null) {
-    const sl = parseFloat(s.avgSleep);
-    if (sl <= 2.5) lines.push({ icon: "🌙", text: `平均睡眠质量偏低（${s.avgSleep}/5），睡眠是精力和情绪的基础，建议优先改善作息。` });
-    else if (sl >= 4) lines.push({ icon: "🌙", text: `睡眠质量良好（${s.avgSleep}/5），继续保持规律作息！` });
-  }
-  if (s.avgMood !== null && parseFloat(s.avgMood) <= 2.5) {
-    lines.push({ icon: "😊", text: `近期情绪偏低落（${s.avgMood}/5），适当安排休息和你喜欢的非学习活动会有帮助。` });
-  }
-
-  // 关联洞察提炼
-  if (corrs) {
-    const sleepEnergy = corrs.find(c => c.label === "睡眠 → 次日精力");
-    if (sleepEnergy?.r >= 0.35)
-      lines.push({ icon: "💡", text: `数据显示你的精力与睡眠质量正相关明显，保证睡眠是提升次日状态最直接的方式。` });
-
-    const studyMood = corrs.find(c => c.label === "学习时长 → 情绪");
-    if (studyMood?.r !== null && studyMood?.r <= -0.35)
-      lines.push({ icon: "⚠️", text: `学习越多情绪反而越低，留意是否有过度消耗的迹象，可尝试减少单日强度、分散到多天。` });
-    else if (studyMood?.r >= 0.35)
-      lines.push({ icon: "🌟", text: `学习本身对你有积极的情绪反馈，保持这种节奏！` });
-  }
-
-  // 连续打卡
-  if (s.streak >= 7) lines.push({ icon: "🔥", text: `已连续记录 ${s.streak} 天，习惯正在养成，坚持下去！` });
-  else if (s.streak === 0 && s.activeDays > 0) lines.push({ icon: "📅", text: "记录出现了中断，尝试每天花一两分钟填写状态，数据连续性会让分析更有参考价值。" });
-
-  if (!lines.length) lines.push({ icon: "🌱", text: "继续记录数据，随着时间积累，这里会给出越来越个性化的分析和建议。" });
-
-  const items = lines.map(l =>
-    `<div class="guidance-item"><span class="guidance-icon">${l.icon}</span><p class="guidance-text">${l.text}</p></div>`
-  ).join("");
-
-  return `<div class="insight-card insight-card-summary">
+  return `<div class="insight-card">
     <div class="insight-card-head">
-      <span class="insight-card-icon">🌱</span>
+      <span class="insight-card-icon">📈</span>
       <div>
-        <div class="insight-card-title">综合小结</div>
-        <div class="insight-card-q">近期状态、效率与改进建议</div>
+        <div class="insight-card-title">我的规律</div>
+        <div class="insight-card-q">状态、时间与效率之间的关联</div>
       </div>
     </div>
-    ${items}
-    <p class="corr-disclaimer-line" style="margin-top:8px">· 基于你的实际数据，客观呈现，样本量小时仅供参考</p>
+    ${rowsHtml}
+    <div class="insight-conclusion">
+      <span class="insight-conclusion-dot">💡</span>
+      <p>${conclusion}</p>
+    </div>
   </div>`;
 }
+
+/* ── 板块2：综合分析 ──────────────────────── */
+
+function buildAnalysisBlock(s) {
+  // ── 本周表现 ──
+  const rateText = s.totalTasks === 0
+    ? "暂无任务记录"
+    : s.completionRate >= 80
+      ? `完成率 ${s.completionRate}%，执行力很强！`
+      : s.completionRate >= 50
+        ? `完成率 ${s.completionRate}%，整体稳定。`
+        : `完成率 ${s.completionRate}%，可适当精简任务量。`;
+  const studyAvg = s.studyDays > 0 ? (s.studyTotal / s.studyDays).toFixed(1) : null;
+  const studyLine = s.studyTotal > 0
+    ? `累计学习 ${s.studyTotal.toFixed(1)} 小时，日均 ${studyAvg} 小时。`
+    : "暂无学习时长记录。";
+  const streakLine = s.streak >= 3
+    ? `连续打卡 ${s.streak} 天 🔥`
+    : s.streak > 0
+      ? `已打卡 ${s.streak} 天，继续保持！`
+      : "本段时间有中断，尝试每天记录一次。";
+
+  // ── 主要发现（关联分析） ──
+  const sleepEnergy  = laggedPearson(s.dailySleep, s.dailyEnergy);
+  const sleepMood    = laggedPearson(s.dailySleep, s.dailyMoods);
+  const rates        = s.dailyRates.map(d => ({ ...d, val: d.rate }));
+  const energyRate   = pearson(s.dailyEnergy.map(d=>d.val), rates.map(d=>d.val));
+  const studyMood    = pearson(s.dailyStudy.map(d=>d.val), s.dailyMoods.map(d=>d.val));
+
+  const findings = [];
+  if (sleepEnergy.r !== null && Math.abs(sleepEnergy.r) >= 0.3)
+    findings.push(sleepEnergy.r > 0
+      ? `睡眠与次日精力存在正相关（r=${sleepEnergy.r.toFixed(2)}）。`
+      : `睡眠对次日精力影响不明显。`);
+  if (energyRate.r !== null && Math.abs(energyRate.r) >= 0.3)
+    findings.push(energyRate.r > 0
+      ? `精力充沛时任务完成率更高（r=${energyRate.r.toFixed(2)}）。`
+      : `精力与完成率暂无明显关联。`);
+  if (sleepMood.r !== null && Math.abs(sleepMood.r) >= 0.3)
+    findings.push(sleepMood.r > 0
+      ? `睡眠质量对次日情绪也有正向影响。`
+      : `睡眠对情绪的滞后影响不明显。`);
+  if (studyMood.r !== null && studyMood.r <= -0.35)
+    findings.push("学习时长增加时情绪有下降趋势，留意劳逸平衡。");
+  if (!findings.length)
+    findings.push(sleepEnergy.n < 4
+      ? "数据不足，记录7天以上后发现会更清晰。"
+      : "各项指标暂无显著关联，继续积累。");
+
+  // ── 最佳状态 ──
+  // 找睡眠≥4时，学习时长和完成率情况
+  const goodSleepDays = s.dailySleep.filter(d => d.val != null && d.val >= 4);
+  const allSleepDays  = s.dailySleep.filter(d => d.val != null);
+  let bestStateText = "暂无足够数据分析最佳状态。";
+  if (goodSleepDays.length >= 2 && allSleepDays.length >= 3) {
+    const avgStudyGood = goodSleepDays.reduce((sum, d) => {
+      const study = s.dailyStudy.find(x => x.key === d.key);
+      return sum + (study?.val ?? 0);
+    }, 0) / goodSleepDays.length;
+    const avgStudyAll  = s.studyDays > 0 ? s.studyTotal / s.studyDays : 0;
+    if (avgStudyAll > 0) {
+      const lift = Math.round(((avgStudyGood - avgStudyAll) / avgStudyAll) * 100);
+      bestStateText = lift > 0
+        ? `睡眠评分 ≥4 时，平均学习时长增加约 ${lift}%。`
+        : `睡眠评分 ≥4 时，学习时长与平均水平相当。`;
+    } else {
+      bestStateText = `已记录 ${goodSleepDays.length} 天睡眠良好（≥4分）。`;
+    }
+  }
+
+  // ── 风险提醒 ──
+  const risks = [];
+  // 最近3天精力趋势
+  const recentEnergy = s.dailyEnergy.slice(-3).filter(d => d.val != null);
+  if (recentEnergy.length >= 2) {
+    const trend = recentEnergy[recentEnergy.length-1].val - recentEnergy[0].val;
+    if (trend <= -1) risks.push(`最近 ${recentEnergy.length} 天精力持续下降（−${Math.abs(trend.toFixed(1))}分）。`);
+  }
+  // 睡眠均值低
+  if (s.avgSleep !== null && parseFloat(s.avgSleep) <= 2.5)
+    risks.push(`平均睡眠评分偏低（${s.avgSleep}/5），建议优先改善作息。`);
+  // 情绪均值低
+  if (s.avgMood !== null && parseFloat(s.avgMood) <= 2.5)
+    risks.push(`近期情绪偏低（${s.avgMood}/5），适当安排放松时间。`);
+  // 学习强度过高
+  if (studyAvg && parseFloat(studyAvg) >= 8)
+    risks.push(`日均学习 ${studyAvg} 小时，强度较高，注意休息。`);
+  if (!risks.length) risks.push("暂无明显风险信号，继续保持当前节奏！");
+
+  // ── 下周建议 ──
+  const suggestions = [];
+  if (s.avgSleep !== null && parseFloat(s.avgSleep) <= 3)
+    suggestions.push("优先提升睡眠质量，而不是增加学习时长。");
+  if (s.completionRate < 50 && s.totalTasks > 0)
+    suggestions.push("适当减少每日任务数量，聚焦2–3个核心目标。");
+  if (s.streak === 0 && s.activeDays > 0)
+    suggestions.push("保持每天记录习惯，连续数据让分析更准确。");
+  if (sleepEnergy.r !== null && sleepEnergy.r >= 0.4)
+    suggestions.push("数据已显示睡眠对精力影响最大，坚持早睡优先。");
+  if (!suggestions.length)
+    suggestions.push("继续保持，多记录几周后会有更个性化的建议。");
+
+  function section(icon, title, lines) {
+    const content = lines.map(l => `<p class="analysis-line">${l}</p>`).join("");
+    return `<div class="analysis-section">
+      <div class="analysis-section-head">
+        <span class="analysis-section-icon">${icon}</span>
+        <span class="analysis-section-title">${title}</span>
+      </div>
+      <div class="analysis-section-body">${content}</div>
+    </div>`;
+  }
+
+  return `<div class="insight-card insight-card-analysis">
+    <div class="insight-card-head">
+      <span class="insight-card-icon">📊</span>
+      <div>
+        <div class="insight-card-title">综合分析</div>
+        <div class="insight-card-q">本周表现 · 发现 · 建议</div>
+      </div>
+    </div>
+    ${section("📊", "本周表现", [rateText, studyLine, streakLine])}
+    ${section("📈", "主要发现", findings)}
+    ${section("🏆", "最佳状态", [bestStateText])}
+    ${section("⚠️", "风险提醒", risks)}
+    ${section("🎯", "下周建议", suggestions)}
+    <p class="corr-disclaimer-line" style="margin-top:8px">· 基于实际数据计算，样本量小时仅供参考</p>
+  </div>`;
+}
+
+
 
 /* ── 通用洞察卡构建器 ─────────────────────── */
 
@@ -547,7 +625,6 @@ function buildStateRingsSection(s, donutHtml, legendHtml) {
   const energyRing = buildStateRingChart(s.dailyEnergy, '精力', ENERGY_RING_COLORS, '⚡', s.avgEnergy);
   const sleepRing  = buildStateRingChart(s.dailySleep,  '睡眠', SLEEP_RING_COLORS,  '🌙', s.avgSleep);
 
-  // 色阶图例
   const legend = `<div class="state-ring-legend">
     ${[1,2,3,4,5].map((v,i) => `<span class="srl-item">
       <span class="srl-dot" style="background:${MOOD_RING_COLORS[i]}"></span>${MOOD_TEXT[v]}
@@ -555,7 +632,7 @@ function buildStateRingsSection(s, donutHtml, legendHtml) {
     <span class="srl-note">（颜色深→浅 = 低→高）</span>
   </div>`;
 
-  return `<div class="stats-chart-card stats-chart-card-wide stats-rings-donut-row">
+  return `<div class="stats-chart-card stats-rings-donut-row">
     <div class="stats-rings-left">
       <div class="stats-chart-title">情绪 · 精力 · 睡眠 分布</div>
       <div class="state-rings-row">
@@ -609,26 +686,16 @@ export function renderStats(container, state, days) {
   const lineChart  = buildLineChart(s.dailyRates, s.dayKeys);
   const studyChart = buildStudyChart(s.dailyStudy, s.dayKeys);
   const donut      = buildDonut(s.catDist, s.totalTasks);
-  const corrPairs = [
-    laggedPearson(s.dailySleep, s.dailyEnergy),
-    laggedPearson(s.dailySleep, s.dailyMoods),
-  ].map((c, i) => ({ ...c, label: i === 0 ? "睡眠 → 次日精力" : "学习时长 → 情绪" }));
-  const studyMoodCorr = pearson(s.dailyStudy.map(d=>d.val), s.dailyMoods.map(d=>d.val));
-  corrPairs.push({ ...studyMoodCorr, label: "学习时长 → 情绪" });
-  const stateBlock  = buildStateSourceBlock(s);
-  const effBlock    = buildEfficiencyBlock(s);
-  const prefBlock   = buildSummaryBlock(s, corrPairs);
+
+  const patternsBlock  = buildMyPatternsBlock(s);
+  const analysisBlock  = buildAnalysisBlock(s);
 
   // 数值格式化
-  const fmtScale = v => v != null ? `${v} / 5` : "未记录";
-  const avgMoodSub   = s.avgMood   ? MOOD_TEXT[Math.round(parseFloat(s.avgMood))]   : "—";
+  const avgMoodSub   = s.avgMood   ? MOOD_TEXT[Math.round(parseFloat(s.avgMood))]     : "—";
   const avgEnergySub = s.avgEnergy ? ENERGY_TEXT[Math.round(parseFloat(s.avgEnergy))] : "—";
-  const avgSleepSub  = s.avgSleep  ? SLEEP_TEXT[Math.round(parseFloat(s.avgSleep))]  : "—";
+  const avgSleepSub  = s.avgSleep  ? SLEEP_TEXT[Math.round(parseFloat(s.avgSleep))]   : "—";
   const studyText = s.studyTotal > 0 ? `${s.studyTotal.toFixed(1)} 小时` : "0 小时";
   const studySub  = s.studyDays > 0 ? `日均 ${(s.studyTotal/s.studyDays).toFixed(1)} 小时` : "暂无记录";
-  const streakText = s.streak > 0 ? `${s.streak} 天 🔥` : "0 天";
-  const litText    = s.litPapers > 0 ? `${s.litPapers} 篇` : "0 篇";
-  const litSub     = s.litMinutes > 0 ? `累计 ${s.litMinutes} 分钟` : "暂无记录";
 
   const top5 = s.catDist.slice(0, 5);
   const legendHTML = top5.length
@@ -644,6 +711,15 @@ export function renderStats(container, state, days) {
 
   const stateRings = buildStateRingsSection(s, donut, legendHTML);
 
+  // 6个指标 → 分两组 3+3
+  const chip = (icon, val, label, sub) => `
+    <div class="stats-ov-chip2">
+      <span class="soc-icon">${icon}</span>
+      <span class="soc-val">${val}</span>
+      <span class="soc-label">${label}</span>
+      ${sub ? `<span class="soc-sub">${sub}</span>` : ""}
+    </div>`;
+
   container.innerHTML = `<div class="stats-view">
 
     <!-- 时间范围 -->
@@ -655,49 +731,20 @@ export function renderStats(container, state, days) {
       </div>
     </div>
 
-    <!-- ① 指标总览（紧凑横条） -->
-    <div class="stats-overview-card">
-      <div class="stats-ov-strip">
-        <div class="stats-ov-chip">
-          <span class="soc-icon">✅</span>
-          <span class="soc-val">${s.completionRate}%</span>
-          <span class="soc-label">完成率</span>
-          <span class="soc-sub">${s.doneTasks}/${s.totalTasks}项</span>
-        </div>
-        <div class="soc-divider"></div>
-        <div class="stats-ov-chip">
-          <span class="soc-icon">📅</span>
-          <span class="soc-val">${s.streak > 0 ? s.streak+"天🔥" : "0天"}</span>
-          <span class="soc-label">连续打卡</span>
-        </div>
-        <div class="soc-divider"></div>
-        <div class="stats-ov-chip">
-          <span class="soc-icon">😊</span>
-          <span class="soc-val">${s.avgMood ?? "—"}</span>
-          <span class="soc-label">情绪均值</span>
-          <span class="soc-sub">${avgMoodSub}</span>
-        </div>
-        <div class="soc-divider"></div>
-        <div class="stats-ov-chip">
-          <span class="soc-icon">⚡</span>
-          <span class="soc-val">${s.avgEnergy ?? "—"}</span>
-          <span class="soc-label">精力均值</span>
-          <span class="soc-sub">${avgEnergySub}</span>
-        </div>
-        <div class="soc-divider"></div>
-        <div class="stats-ov-chip">
-          <span class="soc-icon">🌙</span>
-          <span class="soc-val">${s.avgSleep ?? "—"}</span>
-          <span class="soc-label">睡眠均值</span>
-          <span class="soc-sub">${avgSleepSub}</span>
-        </div>
-        <div class="soc-divider"></div>
-        <div class="stats-ov-chip">
-          <span class="soc-icon">⏱</span>
-          <span class="soc-val">${studyText}</span>
-          <span class="soc-label">累计学习</span>
-          <span class="soc-sub">${studySub}</span>
-        </div>
+    <!-- ① 指标总览：两行 3+3 网格卡片 -->
+    <div class="stats-overview-grid">
+      <div class="stats-ov-card">
+        ${chip("✅", `${s.completionRate}%`, "完成率", `${s.doneTasks}/${s.totalTasks} 项`)}
+        ${chip("📅", s.streak > 0 ? s.streak+"天🔥" : "0天", "连续打卡", "")}
+        ${chip("📖", s.litPapers > 0 ? s.litPapers+"篇" : "0篇", "文献阅读", s.litMinutes > 0 ? `${s.litMinutes}分钟` : "")}
+      </div>
+      <div class="stats-ov-card">
+        ${chip("😊", s.avgMood ?? "—", "情绪均值", avgMoodSub)}
+        ${chip("⚡", s.avgEnergy ?? "—", "精力均值", avgEnergySub)}
+        ${chip("🌙", s.avgSleep ?? "—", "睡眠均值", avgSleepSub)}
+      </div>
+      <div class="stats-ov-card stats-ov-card-wide">
+        ${chip("⏱", studyText, "累计学习", studySub)}
       </div>
     </div>
 
@@ -713,16 +760,13 @@ export function renderStats(container, state, days) {
       </div>
     </div>
 
-    <!-- ③ 状态环形图 -->
+    <!-- ③ 状态环形图 + 任务分布 -->
     ${stateRings}
 
-    <!-- ④ 三个洞察板块：状态来源独占一行，效率+综合并排 -->
-    <div class="stats-insight-blocks stats-insight-blocks-top">
-      ${stateBlock}
-    </div>
+    <!-- ④ 我的规律 + 综合分析 并排两列 -->
     <div class="stats-insight-blocks stats-insight-blocks-bottom">
-      ${effBlock}
-      ${prefBlock}
+      ${patternsBlock}
+      ${analysisBlock}
     </div>
 
   </div>`;
