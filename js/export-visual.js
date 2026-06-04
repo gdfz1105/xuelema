@@ -331,28 +331,26 @@ export function buildExportHtml(scope, state, dateKey, dateLabel) {
         <div class="ex-status-item"><span class="ex-status-label">睡眠</span><span class="ex-status-val">${journal.sleep ? SLEEP_LABELS[journal.sleep] : "—"}</span></div>
         ${studyHours > 0 ? `<div class="ex-status-item"><span class="ex-status-label">学习时长</span><span class="ex-status-val">${studyHours.toFixed(1)}h</span></div>` : ""}
       </div>
-      ${journal.reflection?.summary ? `<div class="ex-summary-row"><span class="ex-summary-icon">✏️</span><span class="ex-summary-text">${esc(journal.reflection.summary)}</span></div>` : ""}
     </div>`;
 
     // ── 文献阅读简报 ──
-    const papers = journal.papers || [];
-    const litMinutes = papers.reduce((s, p) => s + (p.minutes || 0), 0);
-    body += `<div class="ex-section">
+    const litCount = journal.litCount != null ? journal.litCount : (journal.papers || []).length;
+    if (litCount > 0) {
+      body += `<div class="ex-section">
       <div class="ex-section-title">📖 文献阅读</div>
-      ${papers.length
-        ? `<div class="ex-lit-row">
-            <span class="ex-lit-badge">${papers.length} 篇</span>
-            ${litMinutes > 0 ? `<span class="ex-lit-mins">共 ${litMinutes} 分钟</span>` : ""}
-            <span class="ex-lit-titles">${papers.map((p,i) => `${i+1}. ${esc(p.title || "未命名")}`).join("　")}</span>
-           </div>`
-        : `<p class="ex-muted">今日未添加文献</p>`}
+      <div class="ex-lit-row">
+        <span class="ex-lit-badge">${litCount} 篇</span>
+      </div>
     </div>`;
+    }
 
     // ── 小记一笔 ──
+    const summaryText = journal.reflection?.summary || "";
     body += `<div class="ex-section">
       <div class="ex-section-title">✏️ 小记一笔</div>
       ${buildNoteBlock("小收获", "🌱", journal.reflection?.accomplished)}
       ${buildNoteBlock("小问题", "🫠", journal.reflection?.unfinished)}
+      ${summaryText ? `<div class="ex-summary-row" style="margin-top:6px"><span class="ex-summary-icon">📝</span><span class="ex-summary-text">一句总结：${esc(summaryText)}</span></div>` : ""}
     </div>`;
 
   } else if (scope === "reflection") {
