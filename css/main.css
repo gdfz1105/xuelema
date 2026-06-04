@@ -1534,6 +1534,28 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════
+   文献阅读简报
+═══════════════════════════════════════════ */
+.lit-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--accent-soft);
+  border-radius: 8px;
+  min-height: 32px;
+}
+.lit-count {
+  font-size: 0.82rem;
+  color: var(--text);
+  font-weight: 500;
+}
+.lit-mins {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════
    一句总结输入
 ═══════════════════════════════════════════ */
 .summary-row {

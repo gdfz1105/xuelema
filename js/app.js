@@ -43,8 +43,6 @@ let statsRange = 7;
 let anchor = new Date();
 anchor.setHours(0, 0, 0, 0);
 let selectedKey = dateKey(anchor);
-/** 面板当前显示的日期，与 selectedKey 保持同步，但不随翻页改变 */
-let panelKey = selectedKey;
 let editingTaskId = null;
 let selectedDecorSticker = DECOR_STICKERS[0].id;
 
@@ -109,7 +107,7 @@ function render() {
   } else {
     // 切回日历视图时，若之前有选中日期则重新显示面板
     if (selectedKey && !detailPanel.classList.contains("hidden")) {
-      renderPanel(panelKey);
+      renderPanel(selectedKey);
     }
   }
   updateStickerModeUI();
@@ -120,11 +118,11 @@ function updatePanelChrome() {
   const reopenBtn = $("#reopen-panel-btn");
   const hint = $("#calendar-hint");
 
-  reopenBtn.classList.toggle("hidden", panelOpen || !panelKey);
+  reopenBtn.classList.toggle("hidden", panelOpen || !selectedKey);
   hint.classList.toggle("hidden", panelOpen);
 
-  if (panelKey) {
-    $("#reopen-panel-label").textContent = `查看 ${dateLabel(panelKey)}`;
+  if (selectedKey) {
+    $("#reopen-panel-label").textContent = `查看 ${dateLabel(selectedKey)}`;
   }
 }
 
@@ -188,7 +186,6 @@ function updateStickerModeUI() {
 
 function openPanel(key) {
   selectedKey = key;
-  panelKey = key;
   detailPanel.classList.remove("hidden");
   mainEl.classList.add("has-panel");
   render();
@@ -261,7 +258,25 @@ function renderPanel(key) {
   $("#completion-text").textContent =
     total === 0 ? "今日尚无任务" : `已完成 ${done} / ${total} 项（${pct}%）`;
 
+  // 文献阅读简报
   const journal = getJournal(state, key);
+  const papers = journal.papers || [];
+  const litCountEl = $("#lit-count");
+  const litMinsEl  = $("#lit-mins");
+  if (litCountEl) {
+    if (papers.length === 0) {
+      litCountEl.textContent = "今日未添加文献";
+      litMinsEl?.classList.add("hidden");
+    } else {
+      const litMins = papers.reduce((s, p) => s + (p.minutes || 0), 0);
+      litCountEl.textContent = `共 ${papers.length} 篇`;
+      if (litMinsEl) {
+        litMinsEl.textContent = litMins > 0 ? `· ${litMins} 分钟` : "";
+        litMinsEl.classList.toggle("hidden", litMins === 0);
+      }
+    }
+  }
+
   $("#preview-accomplished").textContent = previewText(
     journal.reflection.accomplished.content,
     "点击写写今天的小开心…"
@@ -639,7 +654,7 @@ function bindEvents() {
   });
 
   $("#reopen-panel-btn").addEventListener("click", () => {
-    if (panelKey) openPanel(panelKey);
+    if (selectedKey) openPanel(selectedKey);
   });
 
   $("#panel-close").addEventListener("click", closePanel);
@@ -785,12 +800,12 @@ function bindEvents() {
   $("#task-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const title = $("#task-title").value.trim();
-    if (!title || !panelKey) return;
+    if (!title || !selectedKey) return;
     const payload = {
       title,
       categoryId: getSelectedFromPicker("#category-picker") || "research",
       shapeId: getSelectedFromPicker("#shape-picker") || "rounded",
-      date: panelKey,
+      date: selectedKey,
       startTime: $("#task-start").value || null,
       endTime: $("#task-end").value || null,
     };
@@ -802,8 +817,6 @@ function bindEvents() {
     }
     $("#task-dialog").close();
     persist();
-    // 强制刷新面板，确保新任务立即显示
-    renderPanel(panelKey);
   });
 
   $("#task-cancel").addEventListener("click", () => $("#task-dialog").close());
