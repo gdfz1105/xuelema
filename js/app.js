@@ -43,6 +43,8 @@ let statsRange = 7;
 let anchor = new Date();
 anchor.setHours(0, 0, 0, 0);
 let selectedKey = dateKey(anchor);
+/** 面板当前显示的日期，与 selectedKey 保持同步，但不随翻页改变 */
+let panelKey = selectedKey;
 let editingTaskId = null;
 let selectedDecorSticker = DECOR_STICKERS[0].id;
 
@@ -107,7 +109,7 @@ function render() {
   } else {
     // 切回日历视图时，若之前有选中日期则重新显示面板
     if (selectedKey && !detailPanel.classList.contains("hidden")) {
-      renderPanel(selectedKey);
+      renderPanel(panelKey);
     }
   }
   updateStickerModeUI();
@@ -118,11 +120,11 @@ function updatePanelChrome() {
   const reopenBtn = $("#reopen-panel-btn");
   const hint = $("#calendar-hint");
 
-  reopenBtn.classList.toggle("hidden", panelOpen || !selectedKey);
+  reopenBtn.classList.toggle("hidden", panelOpen || !panelKey);
   hint.classList.toggle("hidden", panelOpen);
 
-  if (selectedKey) {
-    $("#reopen-panel-label").textContent = `查看 ${dateLabel(selectedKey)}`;
+  if (panelKey) {
+    $("#reopen-panel-label").textContent = `查看 ${dateLabel(panelKey)}`;
   }
 }
 
@@ -186,6 +188,7 @@ function updateStickerModeUI() {
 
 function openPanel(key) {
   selectedKey = key;
+  panelKey = key;
   detailPanel.classList.remove("hidden");
   mainEl.classList.add("has-panel");
   render();
@@ -636,7 +639,7 @@ function bindEvents() {
   });
 
   $("#reopen-panel-btn").addEventListener("click", () => {
-    if (selectedKey) openPanel(selectedKey);
+    if (panelKey) openPanel(panelKey);
   });
 
   $("#panel-close").addEventListener("click", closePanel);
@@ -782,12 +785,12 @@ function bindEvents() {
   $("#task-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const title = $("#task-title").value.trim();
-    if (!title || !selectedKey) return;
+    if (!title || !panelKey) return;
     const payload = {
       title,
       categoryId: getSelectedFromPicker("#category-picker") || "research",
       shapeId: getSelectedFromPicker("#shape-picker") || "rounded",
-      date: selectedKey,
+      date: panelKey,
       startTime: $("#task-start").value || null,
       endTime: $("#task-end").value || null,
     };
@@ -799,6 +802,8 @@ function bindEvents() {
     }
     $("#task-dialog").close();
     persist();
+    // 强制刷新面板，确保新任务立即显示
+    renderPanel(panelKey);
   });
 
   $("#task-cancel").addEventListener("click", () => $("#task-dialog").close());
