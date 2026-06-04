@@ -389,8 +389,9 @@ async function openDiaryPreview() {
   const [y, m, d] = selectedKey.split("-").map(Number);
   const dateLabel = `${y}年${m}月${d}日`;
 
-  // Build preview HTML using existing export module
-  const { buildExportHtml } = await import("./export-visual.js");
+  // 加时间戳防止浏览器缓存旧模块
+  const _v = `?v=${Date.now()}`;
+  const { buildExportHtml } = await import(`./export-visual.js${_v}`);
   const sheet = buildExportHtml("day", state, selectedKey, dateLabel);
   sheet.style.cssText = "position:fixed;left:0;top:0;width:100%;height:100%;overflow:auto;z-index:9999;background:#fffef9;padding:32px;box-sizing:border-box;";
 
@@ -414,15 +415,15 @@ async function openDiaryPreview() {
   document.body.appendChild(exportBtns);
 
   exportBtns.querySelector("#diary-export-pdf").onclick = async () => {
-    const { exportAsPdf } = await import("./export-visual.js");
+    const { exportAsPdf } = await import(`./export-visual.js${_v}`);
     await exportAsPdf("day", state, selectedKey, dateLabel, `今天学了吗-${selectedKey}`);
   };
   exportBtns.querySelector("#diary-export-png").onclick = async () => {
-    const { exportAsPng } = await import("./export-visual.js");
+    const { exportAsPng } = await import(`./export-visual.js${_v}`);
     await exportAsPng("day", state, selectedKey, dateLabel, `今天学了吗-${selectedKey}`);
   };
   exportBtns.querySelector("#diary-export-md").onclick = async () => {
-    const { exportAsMarkdown } = await import("./export.js");
+    const { exportAsMarkdown } = await import(`./export.js${_v}`);
     exportAsMarkdown("day", state, selectedKey, dateLabel);
   };
 }
