@@ -78,16 +78,17 @@
             </section>
 
             <section class="panel-section">
-              <h4>📖 文献阅读</h4>
-              <div class="lit-summary-row" id="lit-summary-row">
-                <span class="lit-count" id="lit-count">今日未添加文献</span>
-                <span class="lit-mins hidden" id="lit-mins"></span>
+              <h4>文献阅读</h4>
+              <div class="lit-input-row">
+                <span class="lit-input-label">今日读了</span>
+                <input type="number" id="lit-paper-count" class="lit-count-input" min="0" max="99" step="1" placeholder="0" />
+                <span class="lit-input-unit">篇</span>
               </div>
             </section>
 
             <section class="panel-section">
               <h4>小记一笔</h4>
-              <div class="reflection-cards">
+              <div class="reflection-cards reflection-cards-3">
                 <button type="button" class="note-card" id="open-accomplished">
                   <span class="note-card-icon">🌱</span>
                   <span class="note-card-label">小收获</span>
@@ -99,10 +100,11 @@
                   <span class="note-card-preview" id="preview-unfinished">卡壳的、没做完的…</span>
                 </button>
               </div>
-              <div class="summary-row">
-                <span class="summary-label">✏️ 一句总结</span>
-                <input type="text" id="summary-input" maxlength="80" placeholder="今天一句话记下来…" />
-              </div>
+              <button type="button" class="note-card" id="open-summary">
+                <span class="note-card-icon">✏️</span>
+                <span class="note-card-label">一句总结</span>
+                <span class="note-card-preview" id="preview-summary">今天一句话记下来…</span>
+              </button>
             </section>
 
             <section class="panel-section">

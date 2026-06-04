@@ -258,23 +258,11 @@ function renderPanel(key) {
   $("#completion-text").textContent =
     total === 0 ? "今日尚无任务" : `已完成 ${done} / ${total} 项（${pct}%）`;
 
-  // 文献阅读简报
+  // 文献阅读篇数
   const journal = getJournal(state, key);
-  const papers = journal.papers || [];
-  const litCountEl = $("#lit-count");
-  const litMinsEl  = $("#lit-mins");
-  if (litCountEl) {
-    if (papers.length === 0) {
-      litCountEl.textContent = "今日未添加文献";
-      litMinsEl?.classList.add("hidden");
-    } else {
-      const litMins = papers.reduce((s, p) => s + (p.minutes || 0), 0);
-      litCountEl.textContent = `共 ${papers.length} 篇`;
-      if (litMinsEl) {
-        litMinsEl.textContent = litMins > 0 ? `· ${litMins} 分钟` : "";
-        litMinsEl.classList.toggle("hidden", litMins === 0);
-      }
-    }
+  const litCountInput = $("#lit-paper-count");
+  if (litCountInput) {
+    litCountInput.value = journal.litCount != null ? journal.litCount : "";
   }
 
   $("#preview-accomplished").textContent = previewText(
@@ -284,6 +272,10 @@ function renderPanel(key) {
   $("#preview-unfinished").textContent = previewText(
     journal.reflection.unfinished.content,
     "卡壳的、没做完的…"
+  );
+  $("#preview-summary").textContent = previewText(
+    journal.reflection?.summary,
+    "今天一句话记下来…"
   );
 
   renderScale("#mood-scale", MOOD_LABELS, journal.mood, "mood");
@@ -502,6 +494,9 @@ function openNoteEditor(ctx) {
   } else if (ctx.type === "unfinished") {
     note = journal.reflection.unfinished;
     title = "小问题";
+  } else if (ctx.type === "summary") {
+    note = journal.reflection.summary_note || { content: journal.reflection.summary || "", style: "minimal", placedStickers: [] };
+    title = "一句总结";
   }
 
   if (!noteEditorBound) {
@@ -566,6 +561,16 @@ function saveNoteEditor() {
       return {
         ...j,
         reflection: { ...j.reflection, unfinished: notePayload },
+      };
+    }
+    if (noteContext.type === "summary") {
+      return {
+        ...j,
+        reflection: {
+          ...j.reflection,
+          summary: content,
+          summary_note: notePayload,
+        },
       };
     }
     return j;
@@ -664,6 +669,9 @@ function bindEvents() {
   );
   $("#open-unfinished").addEventListener("click", () =>
     openNoteEditor({ type: "unfinished" })
+  );
+  $("#open-summary").addEventListener("click", () =>
+    openNoteEditor({ type: "summary" })
   );
 
   $("#export-close")?.addEventListener("click", () => $("#export-dialog")?.close());
@@ -845,12 +853,10 @@ function bindEvents() {
       updateJournalField({ [field]: isNaN(val) || val < 0 ? null : Math.round(val * 10) / 10 });
       updateStudyTotal(getJournal(state, selectedKey));
     }
-    // 一句总结
-    if (e.target.id === "summary-input") {
-      updateJournalForSelected((j) => ({
-        ...j,
-        reflection: { ...j.reflection, summary: e.target.value },
-      }));
+    // 文献篇数
+    if (e.target.id === "lit-paper-count") {
+      const val = parseInt(e.target.value, 10);
+      updateJournalField({ litCount: isNaN(val) || val < 0 ? null : val });
     }
   });
 

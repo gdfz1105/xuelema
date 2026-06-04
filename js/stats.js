@@ -81,7 +81,9 @@ function computeStats(state, days) {
       if (j.sleep  != null) { sleepSum  += j.sleep;  sleepCount++;  }
       const dayStudy = (j.studyMorning || 0) + (j.studyAfternoon || 0) + (j.studyEvening || 0);
       if (dayStudy > 0) { studyTotal += dayStudy; studyDays++; }
-      if (j.papers) {
+      if (j.litCount != null) {
+        litPapers += j.litCount;
+      } else if (j.papers) {
         litPapers += j.papers.length;
         j.papers.forEach(p => { litMinutes += Number(p.minutes) || 0; });
       }
@@ -236,7 +238,7 @@ function buildMyPatternsBlock(s) {
       c: c_se,
     },
     {
-      icon: "😊",
+      icon: "🎭",
       label: "情绪 ↔ 精力",
       tag: "同步观察",
       tagColor: "#a78bfa",
@@ -252,7 +254,7 @@ function buildMyPatternsBlock(s) {
       c: c_er,
     },
     {
-      icon: "😊",
+      icon: "🌈",
       label: "情绪 → 完成率",
       tag: "",
       tagColor: "",
@@ -260,7 +262,7 @@ function buildMyPatternsBlock(s) {
       c: c_mr,
     },
     {
-      icon: "🌙",
+      icon: "✅",
       label: "睡眠 → 次日完成率",
       tag: "",
       tagColor: "",
@@ -432,14 +434,14 @@ function buildAnalysisBlock(s) {
 
   return `<div class="insight-card insight-card-analysis">
     <div class="insight-card-head">
-      <span class="insight-card-icon">📊</span>
+      <span class="insight-card-icon">🗂️</span>
       <div>
         <div class="insight-card-title">综合分析</div>
         <div class="insight-card-q">本周表现 · 发现 · 建议</div>
       </div>
     </div>
-    ${section("📊", "本周表现", [rateText, studyLine, streakLine])}
-    ${section("📈", "主要发现", findings)}
+    ${section("📋", "本周表现", [rateText, studyLine, streakLine])}
+    ${section("🔍", "主要发现", findings)}
     ${section("🏆", "最佳状态", [bestStateText])}
     ${section("⚠️", "风险提醒", risks)}
     ${section("🎯", "下周建议", suggestions)}

@@ -59,6 +59,7 @@ export function exportDayMarkdown(state, dateKey, dateLabel) {
   md += `## 小记一笔\n\n`;
   md += noteBlockMd("🌱 小收获", journal.reflection?.accomplished);
   md += noteBlockMd("🫠 小问题", journal.reflection?.unfinished);
+  if (journal.reflection?.summary) md += `### ✏️ 一句总结\n${journal.reflection.summary}\n\n`;
 
   return md;
 }
