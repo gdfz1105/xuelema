@@ -1696,12 +1696,37 @@ body::after {
   gap: 8px;
   padding: 12px 0 8px;
 }
-/* 任务分布图例：紧凑两列 */
-.stats-legend-compact {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 12px;
-  padding: 0 4px;
+/* 任务分布：环形图左、图例右（垂直列表） */
+.stats-donut-with-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 8px;
+}
+.stats-legend-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.stats-legend-vertical .stats-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.stats-legend-vertical .stats-legend-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.75rem;
+}
+.stats-legend-vertical .stats-legend-pct {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════════

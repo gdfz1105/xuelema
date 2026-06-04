@@ -137,6 +137,29 @@ const EXPORT_CSS = `
   .ex-muted  { color: #bbb; font-style: italic; font-size: 13px; }
   .ex-foot   { font-size: 11px; color: #bbb; margin-top: 32px; text-align: right; }
 
+  /* ── 一句总结 ── */
+  .ex-summary-row {
+    display: flex; align-items: flex-start; gap: 7px;
+    margin-top: 8px; padding: 8px 12px;
+    background: #f8f5f0; border-radius: 8px;
+    border-left: 3px solid #c8b8a8;
+  }
+  .ex-summary-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .ex-summary-text { font-size: 13px; color: #5a5550; line-height: 1.5; font-style: italic; }
+
+  /* ── 文献阅读简报 ── */
+  .ex-lit-row {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    padding: 8px 12px; background: #f0f5f8; border-radius: 8px;
+  }
+  .ex-lit-badge {
+    font-size: 12px; font-weight: 700; color: #fff;
+    background: #5ba4cf; padding: 2px 9px; border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .ex-lit-mins { font-size: 12px; color: #7a9ab0; flex-shrink: 0; }
+  .ex-lit-titles { font-size: 12px; color: #7a8a90; line-height: 1.5; }
+
   /* ── 任务列表 ── */
   .ex-task-list { list-style: none; margin: 0; padding: 0; }
   .ex-task-item {
@@ -307,8 +330,22 @@ export function buildExportHtml(scope, state, dateKey, dateLabel) {
         <div class="ex-status-item"><span class="ex-status-label">精力</span><span class="ex-status-val">${journal.energy ? ENERGY[journal.energy] : "—"}</span></div>
         <div class="ex-status-item"><span class="ex-status-label">睡眠</span><span class="ex-status-val">${journal.sleep ? SLEEP_LABELS[journal.sleep] : "—"}</span></div>
         ${studyHours > 0 ? `<div class="ex-status-item"><span class="ex-status-label">学习时长</span><span class="ex-status-val">${studyHours.toFixed(1)}h</span></div>` : ""}
-        ${journal.reflection?.summary ? `<div class="ex-status-item" style="align-items:flex-start;flex:1"><span class="ex-status-label">一句总结</span><span class="ex-status-val" style="font-weight:400;font-size:12px">${esc(journal.reflection.summary)}</span></div>` : ""}
       </div>
+      ${journal.reflection?.summary ? `<div class="ex-summary-row"><span class="ex-summary-icon">✏️</span><span class="ex-summary-text">${esc(journal.reflection.summary)}</span></div>` : ""}
+    </div>`;
+
+    // ── 文献阅读简报 ──
+    const papers = journal.papers || [];
+    const litMinutes = papers.reduce((s, p) => s + (p.minutes || 0), 0);
+    body += `<div class="ex-section">
+      <div class="ex-section-title">📖 文献阅读</div>
+      ${papers.length
+        ? `<div class="ex-lit-row">
+            <span class="ex-lit-badge">${papers.length} 篇</span>
+            ${litMinutes > 0 ? `<span class="ex-lit-mins">共 ${litMinutes} 分钟</span>` : ""}
+            <span class="ex-lit-titles">${papers.map((p,i) => `${i+1}. ${esc(p.title || "未命名")}`).join("　")}</span>
+           </div>`
+        : `<p class="ex-muted">今日未添加文献</p>`}
     </div>`;
 
     // ── 小记一笔 ──

@@ -646,10 +646,10 @@ function buildStateRingsSection(s, donutHtml, legendHtml) {
     <div class="stats-rings-divider"></div>
     <div class="stats-rings-right">
       <div class="stats-chart-title">任务类型分布</div>
-      <div class="state-rings-row">
+      <div class="stats-donut-with-legend">
         ${donutHtml}
+        <div class="stats-legend stats-legend-vertical">${legendHtml}</div>
       </div>
-      <div class="stats-legend stats-legend-compact">${legendHtml}</div>
     </div>
   </div>`;
 }
