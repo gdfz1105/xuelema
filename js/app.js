@@ -841,15 +841,16 @@ function bindEvents() {
     updateJournalField({ [field]: value });
   });
 
-  // 学习时长：stepper 按钮
+  // 学习时长：stepper 按钮（document 级别委托，最稳健）
   const studyFieldMap = {
     "study-morning":   "studyMorning",
     "study-afternoon": "studyAfternoon",
     "study-evening":   "studyEvening",
   };
-  $(".panel-body").addEventListener("click", (e) => {
+  document.addEventListener("click", (e) => {
     const btn = e.target.closest(".stepper-btn");
     if (!btn) return;
+    if (!selectedKey) return;
     const targetId = btn.dataset.target;
     const delta = parseFloat(btn.dataset.delta);
     const fieldName = studyFieldMap[targetId];
@@ -858,20 +859,21 @@ function bindEvents() {
     const cur = j[fieldName] || 0;
     const next = Math.max(0, Math.min(12, Math.round((cur + delta) * 10) / 10));
     updateJournalField({ [fieldName]: next });
-    const valEl = $(`#${targetId}-val`);
-    if (valEl) valEl.textContent = next % 1 === 0 ? String(next) : next.toFixed(1);
-    updateStudyTotal(getJournal(state, selectedKey));
   });
 
-  // 文献篇数：input + change（上下键只触发 change）
-  function handleLitInput(e) {
-    if (e.target.id === "lit-paper-count") {
-      const val = parseInt(e.target.value, 10);
-      updateJournalField({ litCount: isNaN(val) || val < 0 ? null : val });
-    }
-  }
-  $(".panel-body").addEventListener("input",  handleLitInput);
-  $(".panel-body").addEventListener("change", handleLitInput);
+  // 文献篇数：document 级别委托，input + change 都监听
+  document.addEventListener("input", (e) => {
+    if (e.target.id !== "lit-paper-count") return;
+    if (!selectedKey) return;
+    const val = parseInt(e.target.value, 10);
+    updateJournalField({ litCount: isNaN(val) || val < 0 ? null : val });
+  });
+  document.addEventListener("change", (e) => {
+    if (e.target.id !== "lit-paper-count") return;
+    if (!selectedKey) return;
+    const val = parseInt(e.target.value, 10);
+    updateJournalField({ litCount: isNaN(val) || val < 0 ? null : val });
+  });
 
   $("#note-style-picker").addEventListener("click", (e) => {
     const btn = e.target.closest(".style-btn");
