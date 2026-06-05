@@ -260,9 +260,9 @@ function renderPanel(key) {
 
   // 文献阅读篇数
   const journal = getJournal(state, key);
-  const litCountInput = $("#lit-paper-count");
-  if (litCountInput) {
-    litCountInput.value = journal.litCount != null ? journal.litCount : "";
+  const litValEl = $("#lit-paper-val");
+  if (litValEl) {
+    litValEl.textContent = journal.litCount != null ? String(journal.litCount) : "0";
   }
 
   $("#preview-accomplished").textContent = previewText(
@@ -841,7 +841,7 @@ function bindEvents() {
     updateJournalField({ [field]: value });
   });
 
-  // 学习时长：stepper 按钮（document 级别委托，最稳健）
+  // 学习时长 + 文献篇数：stepper 按钮（document 级别委托）
   const studyFieldMap = {
     "study-morning":   "studyMorning",
     "study-afternoon": "studyAfternoon",
@@ -853,6 +853,15 @@ function bindEvents() {
     if (!selectedKey) return;
     const targetId = btn.dataset.target;
     const delta = parseFloat(btn.dataset.delta);
+    // 文献篇数
+    if (targetId === "lit-paper") {
+      const j = getJournal(state, selectedKey);
+      const cur = j.litCount || 0;
+      const next = Math.max(0, Math.min(99, cur + delta));
+      updateJournalField({ litCount: next });
+      return;
+    }
+    // 学习时长
     const fieldName = studyFieldMap[targetId];
     if (!fieldName) return;
     const j = getJournal(state, selectedKey);
@@ -861,19 +870,7 @@ function bindEvents() {
     updateJournalField({ [fieldName]: next });
   });
 
-  // 文献篇数：document 级别委托，input + change 都监听
-  document.addEventListener("input", (e) => {
-    if (e.target.id !== "lit-paper-count") return;
-    if (!selectedKey) return;
-    const val = parseInt(e.target.value, 10);
-    updateJournalField({ litCount: isNaN(val) || val < 0 ? null : val });
-  });
-  document.addEventListener("change", (e) => {
-    if (e.target.id !== "lit-paper-count") return;
-    if (!selectedKey) return;
-    const val = parseInt(e.target.value, 10);
-    updateJournalField({ litCount: isNaN(val) || val < 0 ? null : val });
-  });
+  // 文献篇数 stepper 已合并进上面的 document click 委托（data-target="lit-paper"）
 
   $("#note-style-picker").addEventListener("click", (e) => {
     const btn = e.target.closest(".style-btn");

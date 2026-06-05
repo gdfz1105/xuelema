@@ -81,7 +81,11 @@
               <h4>文献阅读</h4>
               <div class="lit-input-row">
                 <span class="lit-input-label">今日读了</span>
-                <input type="number" id="lit-paper-count" class="lit-count-input" min="0" max="99" step="1" placeholder="0" />
+                <div class="study-stepper">
+                  <button type="button" class="stepper-btn" data-target="lit-paper" data-delta="-1">−</button>
+                  <span class="stepper-val" id="lit-paper-val">0</span>
+                  <button type="button" class="stepper-btn" data-target="lit-paper" data-delta="1">+</button>
+                </div>
                 <span class="lit-input-unit">篇</span>
               </div>
             </section>
