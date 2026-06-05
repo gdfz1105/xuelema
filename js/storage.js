@@ -58,6 +58,7 @@ function migrateJournal(raw) {
     studyMorning,
     studyAfternoon,
     studyEvening,
+    litCount: raw?.litCount ?? null,
     reflection,
   };
 }
