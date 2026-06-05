@@ -128,18 +128,33 @@
               <div class="study-slots">
                 <div class="study-slot">
                   <span class="study-slot-label">🌅 上午</span>
-                  <input type="number" id="study-morning" class="study-slot-input" min="0" max="12" step="0.5" placeholder="0" />
+                  <div class="study-stepper">
+                    <button type="button" class="stepper-btn" data-target="study-morning" data-delta="-0.5">−</button>
+                    <span class="stepper-val" id="study-morning-val">0</span>
+                    <button type="button" class="stepper-btn" data-target="study-morning" data-delta="0.5">+</button>
+                  </div>
                   <span class="study-slot-unit">h</span>
+                  <input type="hidden" id="study-morning" />
                 </div>
                 <div class="study-slot">
                   <span class="study-slot-label">☀️ 下午</span>
-                  <input type="number" id="study-afternoon" class="study-slot-input" min="0" max="12" step="0.5" placeholder="0" />
+                  <div class="study-stepper">
+                    <button type="button" class="stepper-btn" data-target="study-afternoon" data-delta="-0.5">−</button>
+                    <span class="stepper-val" id="study-afternoon-val">0</span>
+                    <button type="button" class="stepper-btn" data-target="study-afternoon" data-delta="0.5">+</button>
+                  </div>
                   <span class="study-slot-unit">h</span>
+                  <input type="hidden" id="study-afternoon" />
                 </div>
                 <div class="study-slot">
                   <span class="study-slot-label">🌙 晚上</span>
-                  <input type="number" id="study-evening" class="study-slot-input" min="0" max="12" step="0.5" placeholder="0" />
+                  <div class="study-stepper">
+                    <button type="button" class="stepper-btn" data-target="study-evening" data-delta="-0.5">−</button>
+                    <span class="stepper-val" id="study-evening-val">0</span>
+                    <button type="button" class="stepper-btn" data-target="study-evening" data-delta="0.5">+</button>
+                  </div>
                   <span class="study-slot-unit">h</span>
+                  <input type="hidden" id="study-evening" />
                 </div>
               </div>
               <p class="study-total-hint" id="study-total-hint"></p>

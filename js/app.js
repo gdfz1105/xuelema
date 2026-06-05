@@ -282,15 +282,16 @@ function renderPanel(key) {
   renderScale("#energy-scale", ENERGY_LABELS, journal.energy, "energy");
   renderScale("#sleep-scale", SLEEP_LABELS, journal.sleep, "sleep");
 
-  // 学习时长三段
+  // 学习时长三段（stepper 显示）
   const slots = [
     { id: "study-morning",   field: "studyMorning"   },
     { id: "study-afternoon", field: "studyAfternoon" },
     { id: "study-evening",   field: "studyEvening"   },
   ];
   slots.forEach(({ id, field }) => {
-    const el = $(`#${id}`);
-    if (el) el.value = journal[field] != null ? journal[field] : "";
+    const val = journal[field] != null ? journal[field] : 0;
+    const valEl = $(`#${id}-val`);
+    if (valEl) valEl.textContent = val % 1 === 0 ? String(val) : val.toFixed(1);
   });
   updateStudyTotal(journal);
 
@@ -840,25 +841,37 @@ function bindEvents() {
     updateJournalField({ [field]: value });
   });
 
-  // 学习时长三段输入
-  $(".panel-body").addEventListener("input", (e) => {
-    const map = {
-      "study-morning":   "studyMorning",
-      "study-afternoon": "studyAfternoon",
-      "study-evening":   "studyEvening",
-    };
-    const field = map[e.target.id];
-    if (field) {
-      const val = parseFloat(e.target.value);
-      updateJournalField({ [field]: isNaN(val) || val < 0 ? null : Math.round(val * 10) / 10 });
-      updateStudyTotal(getJournal(state, selectedKey));
-    }
-    // 文献篇数
+  // 学习时长：stepper 按钮
+  const studyFieldMap = {
+    "study-morning":   "studyMorning",
+    "study-afternoon": "studyAfternoon",
+    "study-evening":   "studyEvening",
+  };
+  $(".panel-body").addEventListener("click", (e) => {
+    const btn = e.target.closest(".stepper-btn");
+    if (!btn) return;
+    const targetId = btn.dataset.target;
+    const delta = parseFloat(btn.dataset.delta);
+    const fieldName = studyFieldMap[targetId];
+    if (!fieldName) return;
+    const j = getJournal(state, selectedKey);
+    const cur = j[fieldName] || 0;
+    const next = Math.max(0, Math.min(12, Math.round((cur + delta) * 10) / 10));
+    updateJournalField({ [fieldName]: next });
+    const valEl = $(`#${targetId}-val`);
+    if (valEl) valEl.textContent = next % 1 === 0 ? String(next) : next.toFixed(1);
+    updateStudyTotal(getJournal(state, selectedKey));
+  });
+
+  // 文献篇数：input + change（上下键只触发 change）
+  function handleLitInput(e) {
     if (e.target.id === "lit-paper-count") {
       const val = parseInt(e.target.value, 10);
       updateJournalField({ litCount: isNaN(val) || val < 0 ? null : val });
     }
-  });
+  }
+  $(".panel-body").addEventListener("input",  handleLitInput);
+  $(".panel-body").addEventListener("change", handleLitInput);
 
   $("#note-style-picker").addEventListener("click", (e) => {
     const btn = e.target.closest(".style-btn");
